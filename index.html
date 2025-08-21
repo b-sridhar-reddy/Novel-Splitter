@@ -104,6 +104,16 @@
             background: #1f6feb;
             border-color: #1f6feb;
         }
+
+        button.danger {
+            background: #d1242f;
+            border-color: #d1242f;
+        }
+
+        button.small {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
         
         button:disabled {
             opacity: .5;
@@ -313,6 +323,68 @@
             max-height: 120px;
             overflow-y: auto;
         }
+
+        /* Custom template management styles */
+        .template-manager {
+            margin-top: 12px;
+            padding: 12px;
+            background: #0d1117;
+            border: 1px solid #222b36;
+            border-radius: 8px;
+        }
+
+        .template-form {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .template-form .row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 8px;
+        }
+
+        .custom-templates-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .template-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 4px 0;
+            background: #11151a;
+            border: 1px solid #1f2630;
+            border-radius: 6px;
+        }
+
+        .template-info {
+            flex: 1;
+            margin-right: 12px;
+        }
+
+        .template-name {
+            font-weight: 600;
+            color: #e6edf3;
+        }
+
+        .template-pattern {
+            font-family: monospace;
+            font-size: 11px;
+            color: #9fb7ff;
+            margin-top: 2px;
+        }
+
+        .file-test-section {
+            margin-top: 12px;
+            padding: 12px;
+            background: #0d1117;
+            border: 1px solid #222b36;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -346,7 +418,6 @@
                 <pre id="previewContent"></pre>
                 <div class="encoding-info">
                     <span id="encodingInfo"></span>
-                    <button type="button" id="reloadWithEncoding" style="display:none;">Try Different Encoding</button>
                 </div>
             </div>
 
@@ -372,24 +443,47 @@
                     <option value="dash">- Chapter Title -</option>
                     <option value="titledot">Title.Number (.1 e.g. .1)</option>
                     <option value="parenfullwidth">Fullwidth paren （1.）</option>
-                    <option value="custom">Custom Pattern (Advanced)</option>
+                    <option value="manage-custom">➕ Manage Custom Templates</option>
                 </select>
-                
-                <!-- Custom regex input -->
-                <div id="customPatternInput" style="display:none; margin-top:8px;">
-                    <label for="customRegex">Custom Regex Pattern:</label>
-                    <input id="customRegex" type="text" placeholder="e.g., ^Part \d+|^Section [IVX]+" />
-                    <div class="pattern-help">
-                        <small>Use JavaScript regex syntax. Pattern will be case-insensitive.</small>
+
+                <!-- Custom template manager -->
+                <div id="customTemplateManager" class="template-manager" style="display:none;">
+                    <h4 style="margin: 0 0 12px;">Custom Template Manager</h4>
+                    
+                    <div class="template-form">
+                        <div>
+                            <label for="customTemplateName">Template Name:</label>
+                            <input id="customTemplateName" type="text" placeholder="e.g., 'Book Parts', 'Roman Chapters'" />
+                        </div>
+                        <div class="row">
+                            <div>
+                                <label for="customTemplatePattern">Regex Pattern:</label>
+                                <input id="customTemplatePattern" type="text" placeholder="e.g., ^Part \d+|^Section [IVX]+" />
+                            </div>
+                            <div>
+                                <label for="customTemplateFlags">Flags (optional):</label>
+                                <input id="customTemplateFlags" type="text" placeholder="i" maxlength="10" />
+                            </div>
+                        </div>
+                        <div class="btns">
+                            <button id="saveTemplateBtn" class="primary">Save Template</button>
+                            <button id="testTemplateBtn">Test Pattern</button>
+                            <button id="closeTemplateManagerBtn">Close</button>
+                        </div>
                     </div>
+
+                    <!-- Test results for new template -->
+                    <div id="newTemplateTestResults" class="test-results" style="display:none;"></div>
+
+                    <!-- Saved templates list -->
+                    <div id="customTemplatesList" class="custom-templates-list"></div>
                 </div>
-                
-                <!-- Pattern testing area -->
-                <div id="patternTester" style="margin-top:12px; display:none;">
-                    <label>Test Pattern:</label>
-                    <textarea id="testText" placeholder="Paste sample text here to test your pattern..." rows="4"></textarea>
-                    <button type="button" id="testPatternBtn">Test Pattern</button>
-                    <div id="testResults" class="test-results"></div>
+
+                <!-- File test section for existing templates -->
+                <div id="fileTestSection" class="file-test-section" style="display:none;">
+                    <h4 style="margin: 0 0 8px;">Test on Loaded File</h4>
+                    <button id="testOnFileBtn" class="primary small">Test Current Pattern on File</button>
+                    <div id="fileTestResults" class="test-results" style="display:none; margin-top:8px;"></div>
                 </div>
             </div>
 
@@ -433,6 +527,7 @@
 
         // File validation constants
         const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+        const CUSTOM_TEMPLATES_KEY = 'novelSplitterCustomTemplates';
 
         // DOM refs
         const fileInput = document.getElementById('fileInput');
@@ -456,19 +551,281 @@
         const textPreview = document.getElementById('textPreview');
         const previewContent = document.getElementById('previewContent');
         const encodingInfo = document.getElementById('encodingInfo');
-        const customPatternInput = document.getElementById('customPatternInput');
-        const customRegex = document.getElementById('customRegex');
-        const patternTester = document.getElementById('patternTester');
-        const testText = document.getElementById('testText');
-        const testPatternBtn = document.getElementById('testPatternBtn');
-        const testResults = document.getElementById('testResults');
         const confidenceScore = document.getElementById('confidenceScore');
         const matchCount = document.getElementById('matchCount');
+
+        // Custom template manager DOM refs
+        const customTemplateManager = document.getElementById('customTemplateManager');
+        const customTemplateName = document.getElementById('customTemplateName');
+        const customTemplatePattern = document.getElementById('customTemplatePattern');
+        const customTemplateFlags = document.getElementById('customTemplateFlags');
+        const saveTemplateBtn = document.getElementById('saveTemplateBtn');
+        const testTemplateBtn = document.getElementById('testTemplateBtn');
+        const closeTemplateManagerBtn = document.getElementById('closeTemplateManagerBtn');
+        const newTemplateTestResults = document.getElementById('newTemplateTestResults');
+        const customTemplatesList = document.getElementById('customTemplatesList');
+        const fileTestSection = document.getElementById('fileTestSection');
+        const testOnFileBtn = document.getElementById('testOnFileBtn');
+        const fileTestResults = document.getElementById('fileTestResults');
 
         // State
         let fileContent = '';
         let fileName = '';
         let coverFile = null;
+        let customTemplates = {};
+
+        // Load custom templates from localStorage
+        function loadCustomTemplates() {
+            try {
+                const stored = localStorage.getItem(CUSTOM_TEMPLATES_KEY);
+                customTemplates = stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                console.error('Failed to load custom templates:', e);
+                customTemplates = {};
+            }
+            updateTemplateDropdown();
+            renderCustomTemplatesList();
+        }
+
+        // Save custom templates to localStorage
+        function saveCustomTemplates() {
+            try {
+                localStorage.setItem(CUSTOM_TEMPLATES_KEY, JSON.stringify(customTemplates));
+            } catch (e) {
+                console.error('Failed to save custom templates:', e);
+                setStatus('Failed to save template to localStorage', 'error');
+            }
+        }
+
+        // Update the dropdown with custom templates
+        function updateTemplateDropdown() {
+            // Remove existing custom options
+            const options = Array.from(chapterPatternSelect.options);
+            options.forEach(option => {
+                if (option.value.startsWith('custom-')) {
+                    option.remove();
+                }
+            });
+
+            // Add custom templates before "Manage Custom Templates"
+            const manageOption = chapterPatternSelect.querySelector('option[value="manage-custom"]');
+            Object.keys(customTemplates).forEach(key => {
+                const option = document.createElement('option');
+                option.value = `custom-${key}`;
+                option.textContent = `${customTemplates[key].name} (Custom)`;
+                chapterPatternSelect.insertBefore(option, manageOption);
+            });
+        }
+
+        // Render custom templates list
+        function renderCustomTemplatesList() {
+            customTemplatesList.innerHTML = '';
+            
+            if (Object.keys(customTemplates).length === 0) {
+                customTemplatesList.innerHTML = '<p class="muted small">No custom templates saved yet.</p>';
+                return;
+            }
+
+            Object.entries(customTemplates).forEach(([key, template]) => {
+                const item = document.createElement('div');
+                item.className = 'template-item';
+                
+                const info = document.createElement('div');
+                info.className = 'template-info';
+                
+                const name = document.createElement('div');
+                name.className = 'template-name';
+                name.textContent = template.name;
+                
+                const pattern = document.createElement('div');
+                pattern.className = 'template-pattern';
+                pattern.textContent = `/${template.pattern}/${template.flags || ''}`;
+                
+                info.appendChild(name);
+                info.appendChild(pattern);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'danger small';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.onclick = () => deleteCustomTemplate(key);
+                
+                item.appendChild(info);
+                item.appendChild(deleteBtn);
+                customTemplatesList.appendChild(item);
+            });
+        }
+
+        // Save a new custom template
+        function saveCustomTemplate() {
+            const name = customTemplateName.value.trim();
+            const pattern = customTemplatePattern.value.trim();
+            const flags = customTemplateFlags.value.trim();
+
+            if (!name || !pattern) {
+                setStatus('Template name and pattern are required', 'error');
+                return;
+            }
+
+            // Test if the regex is valid
+            try {
+                new RegExp(pattern, flags);
+            } catch (e) {
+                setStatus('Invalid regex pattern: ' + e.message, 'error');
+                return;
+            }
+
+            const key = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (customTemplates[key]) {
+                if (!confirm('A template with this name already exists. Replace it?')) {
+                    return;
+                }
+            }
+
+            customTemplates[key] = { name, pattern, flags };
+            saveCustomTemplates();
+            updateTemplateDropdown();
+            renderCustomTemplatesList();
+
+            // Clear form
+            customTemplateName.value = '';
+            customTemplatePattern.value = '';
+            customTemplateFlags.value = '';
+
+            setStatus(`Template "${name}" saved successfully`, 'success');
+        }
+
+        // Delete a custom template
+        function deleteCustomTemplate(key) {
+            if (confirm(`Delete template "${customTemplates[key].name}"?`)) {
+                delete customTemplates[key];
+                saveCustomTemplates();
+                updateTemplateDropdown();
+                renderCustomTemplatesList();
+                
+                // Reset dropdown if deleted template was selected
+                if (chapterPatternSelect.value === `custom-${key}`) {
+                    chapterPatternSelect.value = 'auto';
+                    if (fileContent) {
+                        showMatchPreviewForSelection(fileContent);
+                    }
+                }
+                
+                setStatus('Template deleted', 'success');
+            }
+        }
+
+        // Test a new template pattern
+        function testNewTemplate() {
+            const pattern = customTemplatePattern.value.trim();
+            const flags = customTemplateFlags.value.trim();
+
+            if (!pattern) {
+                newTemplateTestResults.innerHTML = 'Please enter a pattern to test.';
+                newTemplateTestResults.style.display = 'block';
+                return;
+            }
+
+            try {
+                const rx = new RegExp(pattern, flags + 'g'); // Always add global flag for testing
+                
+                if (!fileContent) {
+                    newTemplateTestResults.innerHTML = '<div style="color: #ffed4a;">Load a file first to test the pattern on real content.</div>';
+                    newTemplateTestResults.style.display = 'block';
+                    return;
+                }
+
+                const lines = fileContent.split('\n');
+                const matches = [];
+                
+                lines.forEach((line, index) => {
+                    if (rx.test(line)) {
+                        matches.push({
+                            line: index + 1,
+                            text: line.trim()
+                        });
+                    }
+                });
+
+                if (matches.length === 0) {
+                    newTemplateTestResults.innerHTML = '<div style="color: #ff6b6b;">No matches found in the loaded file.</div>';
+                } else {
+                    const resultHtml = matches.slice(0, 10).map(m => 
+                        `<div><strong>Line ${m.line}:</strong> ${escapeHtml(m.text)}</div>`
+                    ).join('');
+                    const moreText = matches.length > 10 ? `<div class="muted">... and ${matches.length - 10} more matches</div>` : '';
+                    newTemplateTestResults.innerHTML = `<div style="color: #7dd87d;">${matches.length} match(es) found:</div>${resultHtml}${moreText}`;
+                }
+            } catch (error) {
+                newTemplateTestResults.innerHTML = `<div style="color: #ff6b6b;">Invalid regex: ${error.message}</div>`;
+            }
+
+            newTemplateTestResults.style.display = 'block';
+        }
+
+        // Test current selected pattern on loaded file
+        function testCurrentPatternOnFile() {
+            if (!fileContent) {
+                fileTestResults.innerHTML = '<div style="color: #ff6b6b;">No file loaded.</div>';
+                fileTestResults.style.display = 'block';
+                return;
+            }
+
+            const selected = chapterPatternSelect.value;
+            let rx = null;
+
+            if (selected === 'auto') {
+                const lines = fileContent.split('\n');
+                const detected = detectPatternWithConfidence(lines);
+                if (detected && detected.pattern) {
+                    rx = new RegExp(detected.pattern, 'gi');
+                }
+            } else if (selected.startsWith('custom-')) {
+                const key = selected.replace('custom-', '');
+                const template = customTemplates[key];
+                if (template) {
+                    try {
+                        rx = new RegExp(template.pattern, template.flags + 'g');
+                    } catch (e) {
+                        fileTestResults.innerHTML = `<div style="color: #ff6b6b;">Invalid custom template regex: ${e.message}</div>`;
+                        fileTestResults.style.display = 'block';
+                        return;
+                    }
+                }
+            } else {
+                rx = CHAPTER_TEMPLATES[selected] ? new RegExp(CHAPTER_TEMPLATES[selected].source, 'gi') : null;
+            }
+
+            if (!rx) {
+                fileTestResults.innerHTML = '<div style="color: #ff6b6b;">No valid pattern selected.</div>';
+                fileTestResults.style.display = 'block';
+                return;
+            }
+
+            const lines = fileContent.split('\n');
+            const matches = [];
+            
+            lines.forEach((line, index) => {
+                rx.lastIndex = 0; // Reset regex state
+                if (rx.test(line)) {
+                    matches.push({
+                        line: index + 1,
+                        text: line.trim()
+                    });
+                }
+            });
+
+            if (matches.length === 0) {
+                fileTestResults.innerHTML = '<div style="color: #ff6b6b;">No matches found in the loaded file.</div>';
+            } else {
+                const resultHtml = matches.slice(0, 15).map(m => 
+                    `<div><strong>Line ${m.line}:</strong> ${escapeHtml(m.text)}</div>`
+                ).join('');
+                const moreText = matches.length > 15 ? `<div class="muted">... and ${matches.length - 15} more matches</div>` : '';
+                fileTestResults.innerHTML = `<div style="color: #7dd87d;">${matches.length} match(es) found:</div>${resultHtml}${moreText}`;
+            }
+
+            fileTestResults.style.display = 'block';
+        }
 
         // Helpers
         function setStatus(msg, type) {
@@ -570,7 +927,6 @@
         function validateFile(file) {
             const issues = [];
             
-            // Size validation
             if (file.size > MAX_FILE_SIZE) {
                 issues.push({
                     type: 'error',
@@ -583,7 +939,6 @@
                 });
             }
             
-            // File type validation (basic)
             if (!file.name.toLowerCase().endsWith('.txt') && file.type !== 'text/plain') {
                 issues.push({
                     type: 'warning',
@@ -594,13 +949,11 @@
             return issues;
         }
 
-        // Content-based file type detection
         async function detectFileType(file) {
             try {
-                const slice = file.slice(0, 1024); // First 1KB
+                const slice = file.slice(0, 1024);
                 const text = await readFileAsText(slice);
                 
-                // Check for common binary file signatures
                 const binaryMarkers = ['\x00', '\xFF\xD8', 'PK\x03\x04', '%PDF'];
                 const hasBinaryMarkers = binaryMarkers.some(marker => text.includes(marker));
                 
@@ -608,7 +961,6 @@
                     return { isText: false, confidence: 'high' };
                 }
                 
-                // Check text characteristics
                 const printableRatio = (text.match(/[\x20-\x7E\t\n\r]/g) || []).length / text.length;
                 const isText = printableRatio > 0.7;
                 
@@ -621,12 +973,10 @@
             }
         }
 
-        // Show file preview
         function showFilePreview(content) {
             const lines = content.split('\n').slice(0, 10);
             previewContent.textContent = lines.join('\n');
             
-            // Detect potential encoding issues
             const hasEncodingIssues = content.includes('�') || 
                                       content.includes('\uFFFD') ||
                                       (/[^\x00-\x7F]/.test(content) === false && content.length > 0);
@@ -642,7 +992,6 @@
             textPreview.style.display = 'block';
         }
 
-        // Enhanced pattern detection with confidence scoring
         function detectPatternWithConfidence(lines) {
             const results = [];
             
@@ -662,24 +1011,21 @@
                     const confidence = calculateConfidence(matches, lines.length, matchedLines);
                     results.push({
                         key,
-                        pattern,
+                        pattern: pattern.source,
                         matches,
-                        matchedLines: matchedLines.slice(0, 5), // First 5 matches
+                        matchedLines: matchedLines.slice(0, 5),
                         confidence
                     });
                 }
             }
             
-            // Sort by confidence score
             results.sort((a, b) => b.confidence - a.confidence);
             return results[0] || null;
         }
 
         function calculateConfidence(matches, totalLines, matchedLines) {
-            // Base score from match frequency
-            let score = Math.min(matches / 20, 1) * 50; // Max 50 points for frequency
+            let score = Math.min(matches / 20, 1) * 50;
             
-            // Regularity bonus (matches spread evenly)
             if (matchedLines.length >= 3) {
                 const intervals = [];
                 for (let i = 1; i < matchedLines.length; i++) {
@@ -687,75 +1033,31 @@
                 }
                 const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
                 const variance = intervals.reduce((acc, val) => acc + Math.pow(val - avgInterval, 2), 0) / intervals.length;
-                const regularityScore = Math.max(0, 30 - (variance / avgInterval * 10)); // Max 30 points
+                const regularityScore = Math.max(0, 30 - (variance / avgInterval * 10));
                 score += regularityScore;
             }
             
-            // Length consistency bonus
             const lengths = matchedLines.map(m => m.text.length);
             const avgLength = lengths.reduce((a, b) => a + b) / lengths.length;
-            if (avgLength > 5 && avgLength < 100) { // Reasonable chapter title length
-                score += 20; // Max 20 points
+            if (avgLength > 5 && avgLength < 100) {
+                score += 20;
             }
             
             return Math.min(Math.round(score), 100);
         }
 
-        // Custom pattern testing
-        function testCustomPattern() {
-            const pattern = customRegex.value.trim();
-            const testContent = testText.value.trim();
-            
-            if (!pattern || !testContent) {
-                testResults.textContent = 'Please enter both a pattern and test text.';
-                return;
-            }
-            
-            try {
-                const rx = new RegExp(pattern, 'gim');
-                const lines = testContent.split('\n');
-                const matches = [];
-                
-                lines.forEach((line, index) => {
-                    const match = line.match(rx);
-                    if (match) {
-                        matches.push({
-                            line: index + 1,
-                            text: line.trim(),
-                            matched: match[0]
-                        });
-                    }
-                });
-                
-                if (matches.length === 0) {
-                    testResults.innerHTML = '<div style="color: #ff6b6b;">No matches found.</div>';
-                } else {
-                    const resultHtml = matches.map(m => 
-                        `<div><strong>Line ${m.line}:</strong> ${escapeHtml(m.text)}</div>`
-                    ).join('');
-                    testResults.innerHTML = `<div style="color: #7dd87d;">${matches.length} match(es) found:</div>${resultHtml}`;
-                }
-            } catch (error) {
-                testResults.innerHTML = `<div style="color: #ff6b6b;">Invalid regex pattern: ${error.message}</div>`;
-            }
-        }
-
-        // Enhanced match preview display
         function showEnhancedMatchPreview(detectionResult) {
             if (!detectionResult) {
                 matchPreview.style.display = 'none';
                 return;
             }
             
-            // Show confidence score
             confidenceScore.textContent = `Confidence: ${detectionResult.confidence}%`;
             confidenceScore.className = detectionResult.confidence >= 70 ? 'confidence-high' : 
                                         detectionResult.confidence >= 40 ? 'confidence-medium' : 'confidence-low';
             
-            // Show match count
             matchCount.textContent = `${detectionResult.matches} matches found`;
             
-            // Show examples
             const examples = detectionResult.matchedLines.map(m => 
                 `Line ${m.line}: ${escapeHtml(m.text)}`
             ).join('\n');
@@ -777,7 +1079,6 @@
             fileValidationStatus.style.display = 'none';
         }
 
-        // detect which template appears more than once in first chunk
         function detectPattern(lines) {
             for (const [key, rx] of Object.entries(CHAPTER_TEMPLATES)) {
                 let c = 0;
@@ -789,7 +1090,6 @@
             return null;
         }
 
-        // show match preview for selected template (first few matches)
         function showMatchPreviewForSelection(text) {
             if (!text) {
                 matchPreview.style.display = 'none';
@@ -802,23 +1102,24 @@
             if (selected === 'auto') {
                 const detectionResult = detectPatternWithConfidence(lines);
                 showEnhancedMatchPreview(detectionResult);
-            } else if (selected === 'custom') {
-                const pattern = customRegex.value.trim();
-                if (pattern) {
+            } else if (selected.startsWith('custom-')) {
+                const key = selected.replace('custom-', '');
+                const template = customTemplates[key];
+                if (template) {
                     try {
-                        const rx = new RegExp(pattern, 'i');
+                        const rx = new RegExp(template.pattern, template.flags);
                         const matches = getExampleMatches(rx, lines);
                         matchPreview.style.display = 'block';
-                        matchPreview.innerHTML = matches.length ? 
-                            `Custom pattern matches: ${matches.join(', ')}` :
-                            'No matches found for custom pattern in first 500 lines.';
+                        matchPreview.innerHTML = `<strong>${template.name}:</strong> ${matches.length ? 
+                            `${matches.length} matches - ${matches.slice(0, 3).join(', ')}` :
+                            'No matches found in first 500 lines.'}`;
                     } catch (error) {
                         matchPreview.style.display = 'block';
-                        matchPreview.innerHTML = `Invalid custom pattern: ${error.message}`;
+                        matchPreview.innerHTML = `Invalid custom template: ${error.message}`;
                     }
-                } else {
-                    matchPreview.style.display = 'none';
                 }
+            } else if (selected === 'manage-custom') {
+                matchPreview.style.display = 'none';
             } else {
                 const rx = CHAPTER_TEMPLATES[selected];
                 if (!rx) {
@@ -844,7 +1145,6 @@
             return arr;
         }
 
-        // splitting logic
         function splitChapters(text) {
             const lines = String(text).split('\n');
             const selected = chapterPatternSelect.value;
@@ -853,16 +1153,17 @@
             
             if (selected === 'auto') {
                 headingInfo = detectPattern(lines);
-            } else if (selected === 'custom') {
-                const customPattern = customRegex.value.trim();
-                if (customPattern) {
+            } else if (selected.startsWith('custom-')) {
+                const key = selected.replace('custom-', '');
+                const template = customTemplates[key];
+                if (template) {
                     try {
                         headingInfo = { 
-                            key: 'custom', 
-                            rx: new RegExp(customPattern, 'i') 
+                            key: template.name, 
+                            rx: new RegExp(template.pattern, template.flags) 
                         };
-                    } catch (error) {
-                        console.error('Invalid custom regex:', error);
+                    } catch (e) {
+                        console.error('Invalid custom template regex:', e);
                         headingInfo = null;
                     }
                 }
@@ -879,7 +1180,6 @@
             };
             
             if (!headingInfo?.rx) {
-                // no heading pattern; entire text as single entry
                 chapters.push({ title: 'synopsis', content: text.trim() });
                 return chapters;
             }
@@ -912,7 +1212,6 @@
             return chapters;
         }
 
-        // build XHTML for EPUB chapter
         function buildXhtml(title, bodyText) {
             const paras = String(bodyText)
                 .split('\n')
@@ -934,7 +1233,6 @@
 </html>`;
         }
 
-        // ZIP creation with indexed filenames
         async function createZipDownload(chapters) {
             showProgress();
             updateProgress(5, 'Preparing ZIP...');
@@ -952,7 +1250,6 @@
                 zip.file(fname, ch.content);
                 updateProgress(10 + (i / total) * 80, `Adding ${fname}...`);
                 
-                // yield for UI responsiveness
                 await new Promise(r => setTimeout(r, 0));
             }
             
@@ -971,7 +1268,6 @@
             setStatus(`Downloaded ${outName}`, 'success');
         }
 
-        // EPUB creation with indexed filenames
         async function createEpubDownload(chapters) {
             showProgress();
             updateProgress(5, 'Preparing EPUB...');
@@ -983,10 +1279,8 @@
             const authorMeta = metaAuthor.value.trim() || 'Unknown';
             const lang = 'zh';
             
-            // mimetype first (and stored, no compression)
             zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
             
-            // META-INF/container.xml
             zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
     <rootfiles>
@@ -996,7 +1290,6 @@
             
             const oebps = zip.folder('OEBPS');
             
-            // optional cover image
             let coverHref = null;
             if (coverFile) {
                 const ext = getCoverExtension(coverFile.type);
@@ -1006,7 +1299,6 @@
                 coverHref = coverName;
             }
             
-            // create XHTML files with indexed filenames
             const xhtmlFiles = [];
             for (let i = 0; i < chapters.length; i++) {
                 const ch = chapters[i];
@@ -1026,7 +1318,6 @@
                 await new Promise(r => setTimeout(r, 0));
             }
             
-            // optional cover.xhtml (kept as cover.xhtml so readers can detect it)
             if (coverHref) {
                 const coverXhtml = `<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
@@ -1039,7 +1330,6 @@
                 oebps.file('cover.xhtml', coverXhtml);
             }
             
-            // toc.ncx
             const navMapEntries = xhtmlFiles.map((f, idx) =>
                 `    <navPoint id="navPoint-${idx + 1}" playOrder="${idx + 1}">
         <navLabel><text>${escapeHtml(f.title)}</text></navLabel>
@@ -1062,7 +1352,6 @@ ${navMapEntries}
 </navMap>
 </ncx>`);
             
-            // content.opf
             const manifestItems = [];
             const spineItems = [];
             
@@ -1113,13 +1402,10 @@ ${spineItems.join('\n')}
             setStatus(`Downloaded ${outName}`, 'success');
         }
 
-        // Enhanced file selection handler
         async function handleFileSelection(file) {
-            // Clear previous status
             hideValidationStatus();
             textPreview.style.display = 'none';
             
-            // Validate file
             const issues = validateFile(file);
             const criticalError = issues.find(issue => issue.type === 'error');
             
@@ -1128,13 +1414,11 @@ ${spineItems.join('\n')}
                 return;
             }
             
-            // Show warnings
             const warnings = issues.filter(issue => issue.type === 'warning');
             if (warnings.length > 0) {
                 showValidationStatus(warnings.map(w => w.message).join('; '), 'warning');
             }
             
-            // Detect file type
             const typeDetection = await detectFileType(file);
             if (!typeDetection.isText) {
                 showValidationStatus('This appears to be a binary file, not a text file.', 'error');
@@ -1150,13 +1434,14 @@ ${spineItems.join('\n')}
                 
                 updateProgress(50, 'Analyzing content...');
                 
-                // Show file preview
                 showFilePreview(fileContent);
                 
-                // Enhanced pattern detection
                 const lines = fileContent.split('\n');
                 const detectionResult = detectPatternWithConfidence(lines);
                 showEnhancedMatchPreview(detectionResult);
+                
+                // Show file test section
+                fileTestSection.style.display = 'block';
                 
                 updateProgress(100, 'Ready');
                 setStatus(`Loaded ${fileName} (${(file.size / 1024).toFixed(1)}KB)`, 'success');
@@ -1174,7 +1459,7 @@ ${spineItems.join('\n')}
             }
         }
 
-        // Drag and drop event handlers
+        // Event handlers
         fileDropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             fileDropZone.classList.add('drag-over');
@@ -1200,16 +1485,15 @@ ${spineItems.join('\n')}
             }
         });
 
-        // Event handlers
         fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files?.[0];
+            const file = e.target.files?.;
             if (file) {
                 await handleFileSelection(file);
             }
         });
 
         coverInput.addEventListener('change', (e) => {
-            coverFile = e.target.files?.[0] ? e.target.files[0] : null;
+            coverFile = e.target.files?. ? e.target.files : null;
             if (coverFile) {
                 if (!String(coverFile.type).startsWith('image/')) {
                     setStatus('Cover must be an image file.', 'error');
@@ -1224,16 +1508,14 @@ ${spineItems.join('\n')}
             }
         });
 
-        // Pattern selection handler
         chapterPatternSelect.addEventListener('change', () => {
             const selected = chapterPatternSelect.value;
             
-            if (selected === 'custom') {
-                customPatternInput.style.display = 'block';
-                patternTester.style.display = 'block';
+            if (selected === 'manage-custom') {
+                customTemplateManager.style.display = 'block';
+                chapterPatternSelect.value = 'auto'; // Reset to auto
             } else {
-                customPatternInput.style.display = 'none';
-                patternTester.style.display = 'none';
+                customTemplateManager.style.display = 'none';
             }
             
             if (fileContent) {
@@ -1241,8 +1523,15 @@ ${spineItems.join('\n')}
             }
         });
 
-        // Test pattern button
-        testPatternBtn.addEventListener('click', testCustomPattern);
+        // Custom template manager event handlers
+        saveTemplateBtn.addEventListener('click', saveCustomTemplate);
+        testTemplateBtn.addEventListener('click', testNewTemplate);
+        closeTemplateManagerBtn.addEventListener('click', () => {
+            customTemplateManager.style.display = 'none';
+            newTemplateTestResults.style.display = 'none';
+        });
+
+        testOnFileBtn.addEventListener('click', testCurrentPatternOnFile);
 
         processZipBtn.addEventListener('click', async () => {
             if (!fileContent) {
@@ -1273,6 +1562,9 @@ ${spineItems.join('\n')}
                 setStatus('Error creating EPUB.', 'error');
             }
         });
+
+        // Initialize
+        loadCustomTemplates();
     </script>
 </body>
 </html>
