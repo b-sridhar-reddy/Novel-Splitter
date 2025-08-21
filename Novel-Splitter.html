@@ -1,673 +1,1278 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Novel Chapter Splitter — with Custom Templates</title>
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
-    integrity="sha512-+S6mdcRvj3e8yoU0u3vTqq7tMqgCydoD4rJ6xLe3rC0tG5x3biv4nhvE60aR1x9n2h2JmLQFhWClQqS7Q3bX0g=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <style>
-    :root { color-scheme: dark light; }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
-      background: #0b0c10;
-      color: #e6edf3;
-    }
-    .wrap { max-width: 920px; margin: auto; padding: 24px; }
-    h1 { font-size: 22px; margin: 0 0 12px; }
-    p.lead { opacity: .85; margin: 0 0 16px; }
-    .card { background: #11151a; border: 1px solid #1f2630; border-radius: 12px; padding: 16px; }
-    label { display:block; margin:8px 0 6px; font-weight:600; }
-    input[type="file"], select, input[type="text"], textarea {
-      width:100%; display:block; padding:10px; border-radius:8px;
-      border:1px solid #26313f; background:#0d1117; color:#e6edf3;
-    }
-    .row { display:grid; grid-template-columns:1fr; gap:12px; }
-    @media(min-width:860px){ .row{ grid-template-columns:1fr 1fr; } }
-    .btns { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
-    button {
-      appearance:none; border:1px solid #2b3441; background:#0f141b; color:#e6edf3;
-      padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
-    }
-    button.primary { background:#1f6feb; border-color:#1f6feb; }
-    button.danger { background:#2b1218; border-color:#7a1e26; }
-    button:disabled { opacity:.5; cursor:not-allowed; }
-    .status { margin-top:12px; padding:10px; border-radius:8px; background:#0d1117; border:1px solid #222b36; }
-    .status.success { border-color:#1a7f37; }
-    .status.error { border-color:#d1242f; }
-    .progress { margin-top:12px; background:#0d1117; border:1px solid #222b36; border-radius:8px; overflow:hidden; display:none; }
-    .progress .bar { height:10px; width:0%; background:#1f6feb; transition:width .25s ease; }
-    .progress .txt { font-size:12px; padding:6px 8px; opacity:.85; }
-    .muted { opacity:.7; }
-    .small { font-size:12px; }
-    .match-preview { margin-top:8px; font-size:13px; color:#9fb7ff; }
-    .flex { display:flex; gap:10px; align-items:center; }
-    .col { display:flex; flex-direction:column; gap:8px; }
-    .custom-list { margin-top:8px; border-top:1px dashed #23313f; padding-top:8px; }
-    .custom-item { display:flex; gap:8px; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.02); }
-    .custom-item .meta { font-size:13px; color:#9fb7ff; }
-    .help { font-size:12px; color:#9fb7ff; margin-top:6px; }
-    .inline { display:inline-block; vertical-align:middle; }
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Novel Chapter Splitter (ZIP & EPUB)</title>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-S6mdcRvj3e8yoU0u3vTqq7tMqgCydoD4rJ6xLe3rC0tG5x3biv4nhvE60aR1x9n2h2JmLQFhWClQqS7Q3bX0g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        :root {
+            color-scheme: dark light;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+            background: #0b0c10;
+            color: #e6edf3;
+        }
+        
+        .wrap {
+            max-width: 820px;
+            margin: auto;
+            padding: 24px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin: 0 0 12px;
+        }
+        
+        p.lead {
+            opacity: .85;
+            margin: 0 0 16px;
+        }
+        
+        .card {
+            background: #11151a;
+            border: 1px solid #1f2630;
+            border-radius: 12px;
+            padding: 16px;
+        }
+        
+        label {
+            display: block;
+            margin: 8px 0 6px;
+            font-weight: 600;
+        }
+        
+        input[type="file"], select, input[type="text"] {
+            width: 100%;
+            display: block;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #26313f;
+            background: #0d1117;
+            color: #e6edf3;
+        }
+
+        textarea {
+            width: 100%;
+            display: block;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #26313f;
+            background: #0d1117;
+            color: #e6edf3;
+            font-family: monospace;
+            resize: vertical;
+        }
+        
+        .row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        
+        @media (min-width: 720px) {
+            .row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .btns {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        button {
+            appearance: none;
+            border: 1px solid #2b3441;
+            background: #0f141b;
+            color: #e6edf3;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        button.primary {
+            background: #1f6feb;
+            border-color: #1f6feb;
+        }
+        
+        button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .link-btn {
+            background: none;
+            border: none;
+            color: #1f6feb;
+            text-decoration: underline;
+            cursor: pointer;
+            font: inherit;
+            padding: 0;
+        }
+        
+        .status {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            background: #0d1117;
+            border: 1px solid #222b36;
+        }
+        
+        .status.success {
+            border-color: #1a7f37;
+        }
+        
+        .status.error {
+            border-color: #d1242f;
+        }
+        
+        .progress {
+            margin-top: 12px;
+            background: #0d1117;
+            border: 1px solid #222b36;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .progress .bar {
+            height: 10px;
+            width: 0%;
+            background: #1f6feb;
+            transition: width .25s ease;
+        }
+        
+        .progress .txt {
+            font-size: 12px;
+            padding: 6px 8px;
+            opacity: .85;
+        }
+        
+        .muted {
+            opacity: .7;
+        }
+        
+        .small {
+            font-size: 12px;
+        }
+        
+        .match-preview {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #9fb7ff;
+        }
+        
+        .meta-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            align-items: center;
+        }
+        
+        .meta-row > * {
+            flex: 1;
+        }
+        
+        .meta-label {
+            font-size: 12px;
+            opacity: .8;
+        }
+
+        /* New styles for enhancements */
+        .file-drop-zone {
+            border: 2px dashed #26313f;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-drop-zone:hover {
+            border-color: #1f6feb;
+            background: rgba(31, 111, 235, 0.05);
+        }
+
+        .file-drop-zone.drag-over {
+            border-color: #1f6feb;
+            background: rgba(31, 111, 235, 0.1);
+            transform: scale(1.02);
+        }
+
+        .drop-content svg {
+            opacity: 0.6;
+            margin-bottom: 12px;
+        }
+
+        .file-limits {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 8px;
+        }
+
+        .validation-status {
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .validation-status.error {
+            background: rgba(209, 36, 47, 0.1);
+            border: 1px solid #d1242f;
+            color: #ff6b6b;
+        }
+
+        .validation-status.warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid #ffc107;
+            color: #ffed4a;
+        }
+
+        .validation-status.success {
+            background: rgba(26, 127, 55, 0.1);
+            border: 1px solid #1a7f37;
+            color: #7dd87d;
+        }
+
+        .text-preview {
+            margin-top: 12px;
+            padding: 12px;
+            background: #0d1117;
+            border: 1px solid #222b36;
+            border-radius: 8px;
+        }
+
+        .text-preview pre {
+            background: #000;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .encoding-info {
+            margin-top: 8px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .pattern-help {
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
+        .test-results {
+            margin-top: 8px;
+            padding: 8px;
+            background: #0d1117;
+            border-radius: 6px;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .detection-confidence {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        #confidenceScore {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .confidence-high { background: rgba(26, 127, 55, 0.2); color: #7dd87d; }
+        .confidence-medium { background: rgba(255, 193, 7, 0.2); color: #ffed4a; }
+        .confidence-low { background: rgba(209, 36, 47, 0.2); color: #ff6b6b; }
+
+        #matchExamples pre {
+            background: #000;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>📖 Novel Chapter Splitter — Custom Templates</h1>
-    <p class="lead">Add custom regex templates for chapter headings, test them, and persist for future use. Works with ZIP and EPUB exports (index-prefixed filenames).</p>
+    <div class="wrap">
+        <h1>Novel Chapter Splitter</h1>
+        <p class="lead">Load a <strong>.txt</strong> novel, optionally add a cover image, choose chapter-detection template or Auto Detect, then export chapters as a <strong>ZIP</strong> of .txt files or as an <strong>EPUB</strong>. All client-side.</p>
+        
+        <div class="card">
+            <!-- Enhanced file input area with drag-and-drop -->
+            <div class="file-drop-zone" id="fileDropZone">
+                <div class="drop-content">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                    <p>Drop your .txt file here or <button type="button" class="link-btn" onclick="fileInput.click()">browse</button></p>
+                    <div class="file-limits">Max file size: 50MB</div>
+                </div>
+            </div>
 
-    <div class="card">
-      <div class="row">
-        <div>
-          <label for="fileInput">Novel text file (.txt)</label>
-          <input id="fileInput" type="file" accept=".txt,text/plain">
-          <div id="fileNameInfo" class="small muted"></div>
+            <!-- Hidden file input -->
+            <input id="fileInput" type="file" accept=".txt,text/plain" style="display: none;">
+
+            <!-- File validation status -->
+            <div id="fileValidationStatus" class="validation-status" style="display:none;"></div>
+            
+            <div id="fileNameInfo" class="small muted"></div>
+
+            <!-- Text preview area -->
+            <div id="textPreview" class="text-preview" style="display:none;">
+                <label>File Preview (first 10 lines):</label>
+                <pre id="previewContent"></pre>
+                <div class="encoding-info">
+                    <span id="encodingInfo"></span>
+                    <button type="button" id="reloadWithEncoding" style="display:none;">Try Different Encoding</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <div>
+                    <label for="coverInput">Optional cover image</label>
+                    <input id="coverInput" type="file" accept="image/*">
+                    <div id="coverNameInfo" class="small muted"></div>
+                </div>
+            </div>
+
+            <!-- Enhanced chapter pattern section -->
+            <div style="margin-top: 16px;">
+                <label for="chapterPattern">Chapter heading format</label>
+                <select id="chapterPattern">
+                    <option value="auto" selected>Auto Detect</option>
+                    <option value="chinese">Chinese 第1章</option>
+                    <option value="chapter">English "Chapter 12"</option>
+                    <option value="ch">English "Ch. 12"</option>
+                    <option value="part">Part I, Part II, etc.</option>
+                    <option value="section">Section 1, Section 2, etc.</option>
+                    <option value="number">1. 2. 3. (number + period)</option>
+                    <option value="dash">- Chapter Title -</option>
+                    <option value="titledot">Title.Number (.1 e.g. .1)</option>
+                    <option value="parenfullwidth">Fullwidth paren （1.）</option>
+                    <option value="custom">Custom Pattern (Advanced)</option>
+                </select>
+                
+                <!-- Custom regex input -->
+                <div id="customPatternInput" style="display:none; margin-top:8px;">
+                    <label for="customRegex">Custom Regex Pattern:</label>
+                    <input id="customRegex" type="text" placeholder="e.g., ^Part \d+|^Section [IVX]+" />
+                    <div class="pattern-help">
+                        <small>Use JavaScript regex syntax. Pattern will be case-insensitive.</small>
+                    </div>
+                </div>
+                
+                <!-- Pattern testing area -->
+                <div id="patternTester" style="margin-top:12px; display:none;">
+                    <label>Test Pattern:</label>
+                    <textarea id="testText" placeholder="Paste sample text here to test your pattern..." rows="4"></textarea>
+                    <button type="button" id="testPatternBtn">Test Pattern</button>
+                    <div id="testResults" class="test-results"></div>
+                </div>
+            </div>
+
+            <!-- Enhanced match preview with confidence scores -->
+            <div id="matchPreview" class="match-preview" style="display:none;">
+                <div class="detection-confidence">
+                    <span id="confidenceScore"></span>
+                    <span id="matchCount"></span>
+                </div>
+                <div id="matchExamples"></div>
+            </div>
+
+            <div class="meta-row" style="margin-top: 12px;">
+                <div>
+                    <label class="meta-label">EPUB metadata (optional)</label>
+                    <input id="metaTitle" type="text" placeholder="Title (defaults to filename)">
+                </div>
+                <div>
+                    <label class="meta-label" style="visibility: hidden;">Author</label>
+                    <input id="metaAuthor" type="text" placeholder="Author (optional)">
+                </div>
+            </div>
+
+            <div class="btns">
+                <button id="processZipBtn" class="primary" disabled>Split & Download ZIP</button>
+                <button id="processEpubBtn" disabled>Split & Download EPUB</button>
+            </div>
         </div>
 
-        <div>
-          <label for="coverInput">Optional cover image</label>
-          <input id="coverInput" type="file" accept="image/*">
-          <div id="coverNameInfo" class="small muted"></div>
+        <div id="progressContainer" class="progress">
+            <div class="bar" id="progressBar"></div>
+            <div class="txt" id="progressText">0%</div>
         </div>
-      </div>
 
-      <div style="margin-top:10px">
-        <label for="chapterPattern">Chapter template</label>
-        <select id="chapterPattern"></select>
-        <div id="matchPreview" class="match-preview" style="display:none"></div>
-      </div>
-
-      <div style="margin-top:12px" class="col">
-        <label class="meta-label">EPUB metadata (optional)</label>
-        <div class="flex">
-          <input id="metaTitle" type="text" placeholder="Title (defaults to filename)">
-          <input id="metaAuthor" type="text" placeholder="Author (optional)">
-        </div>
-      </div>
-
-      <div class="btns" style="margin-top:12px">
-        <button id="processZipBtn" class="primary" disabled>Split & Download ZIP</button>
-        <button id="processEpubBtn" disabled>Split & Download EPUB</button>
-        <button id="resetCustomBtn" class="danger" title="Remove all custom templates">Reset custom templates</button>
-      </div>
-
-      <div id="progressContainer" class="progress">
-        <div class="bar" id="progressBar"></div>
-        <div class="txt" id="progressText">0%</div>
-      </div>
-
-      <div id="status" class="status small">Waiting for a .txt file…</div>
-
-      <hr style="margin:12px 0 8px;border:none;border-top:1px solid #1f2832"/>
-
-      <h3 style="margin:0 0 8px;font-size:16px">Custom regex templates</h3>
-
-      <div class="row">
-        <div>
-          <label for="customName">Name</label>
-          <input id="customName" type="text" placeholder="e.g. My numbering style">
-        </div>
-        <div>
-          <label for="customPattern">Regex pattern</label>
-          <input id="customPattern" type="text" placeholder="e.g. ^\s*第\s*\d+\s*章.*$  (enter without surrounding / /)">
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:8px">
-        <div style="max-width:160px">
-          <label for="customFlags">Flags</label>
-          <input id="customFlags" type="text" placeholder="e.g. iu">
-        </div>
-        <div>
-          <label class="help">Test string (optional): will run new regex against file to show matches)</label>
-          <input id="customTest" type="text" placeholder="Optional quick test text">
-        </div>
-      </div>
-
-      <div class="flex" style="margin-top:8px">
-        <button id="addCustomBtn">Add & Save template</button>
-        <button id="testCustomBtn">Test regex (no save)</button>
-        <div id="customMsg" class="small muted"></div>
-      </div>
-
-      <div class="custom-list" id="customListContainer"></div>
-
-      <div class="small muted" style="margin-top:12px">Storage: custom templates saved locally in your browser (localStorage). Use <strong>Reset custom templates</strong> to remove them.</div>
+        <div id="status" class="status small">Waiting for a .txt file</div>
+        <div class="small muted" style="margin-top: 8px;">Note: filenames inside ZIP/EPUB are zero-padded (000, 001, ...) so they sort correctly.</div>
     </div>
-  </div>
 
-<script>
-/* Complete app with custom template CRUD + persistence in localStorage.
-   Key localStorage key: novel_splitter_custom_templates
-*/
+    <script>
+        'use strict';
 
-'use strict';
+        // File validation constants
+        const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
-// DOM refs
-const fileInput = document.getElementById('fileInput');
-const coverInput = document.getElementById('coverInput');
-const chapterPatternSelect = document.getElementById('chapterPattern');
-const fileNameInfo = document.getElementById('fileNameInfo');
-const coverNameInfo = document.getElementById('coverNameInfo');
-const processZipBtn = document.getElementById('processZipBtn');
-const processEpubBtn = document.getElementById('processEpubBtn');
-const resetCustomBtn = document.getElementById('resetCustomBtn');
-const progressContainer = document.getElementById('progressContainer');
-const progressBar = document.getElementById('progressBar');
-const progressText = document.getElementById('progressText');
-const statusDiv = document.getElementById('status');
-const matchPreview = document.getElementById('matchPreview');
+        // DOM refs
+        const fileInput = document.getElementById('fileInput');
+        const coverInput = document.getElementById('coverInput');
+        const chapterPatternSelect = document.getElementById('chapterPattern');
+        const fileNameInfo = document.getElementById('fileNameInfo');
+        const coverNameInfo = document.getElementById('coverNameInfo');
+        const processZipBtn = document.getElementById('processZipBtn');
+        const processEpubBtn = document.getElementById('processEpubBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const statusDiv = document.getElementById('status');
+        const matchPreview = document.getElementById('matchPreview');
+        const metaTitle = document.getElementById('metaTitle');
+        const metaAuthor = document.getElementById('metaAuthor');
 
-const metaTitle = document.getElementById('metaTitle');
-const metaAuthor = document.getElementById('metaAuthor');
+        // New DOM references
+        const fileDropZone = document.getElementById('fileDropZone');
+        const fileValidationStatus = document.getElementById('fileValidationStatus');
+        const textPreview = document.getElementById('textPreview');
+        const previewContent = document.getElementById('previewContent');
+        const encodingInfo = document.getElementById('encodingInfo');
+        const customPatternInput = document.getElementById('customPatternInput');
+        const customRegex = document.getElementById('customRegex');
+        const patternTester = document.getElementById('patternTester');
+        const testText = document.getElementById('testText');
+        const testPatternBtn = document.getElementById('testPatternBtn');
+        const testResults = document.getElementById('testResults');
+        const confidenceScore = document.getElementById('confidenceScore');
+        const matchCount = document.getElementById('matchCount');
 
-const customName = document.getElementById('customName');
-const customPattern = document.getElementById('customPattern');
-const customFlags = document.getElementById('customFlags');
-const customTest = document.getElementById('customTest');
-const addCustomBtn = document.getElementById('addCustomBtn');
-const testCustomBtn = document.getElementById('testCustomBtn');
-const customMsg = document.getElementById('customMsg');
-const customListContainer = document.getElementById('customListContainer');
+        // State
+        let fileContent = '';
+        let fileName = '';
+        let coverFile = null;
 
-// State
-let fileContent = '';
-let fileName = '';
-let coverFile = null;
-
-// LocalStorage key
-const LS_KEY = 'novel_splitter_custom_templates_v1';
-
-// Built-in templates (pattern string and flags)
-const BUILTIN_TEMPLATES = [
-  { key: 'chinese', name: 'Chinese: 第12章 …', pattern: '^\\\\s*第\\\\s*([0-9]+)\\\\s*章[\\\\.。:\\\\s]?.*$', flags: 'i' },
-  { key: 'chapter', name: 'English: Chapter 12 …', pattern: '^\\\\s*Chapter\\\\s*([0-9]+)\\\\b.*$', flags: 'i' },
-  { key: 'ch', name: 'English: Ch. 12 …', pattern: '^\\\\s*Ch(?:apter)?\\\\.?\\\\s*([0-9]+)\\\\b.*$', flags: 'i' },
-  { key: 'titledot', name: 'Title.Number: 标题.1 …', pattern: '^\\\\s*([^\\\\r\\\\n]{1,120})\\\\.\\\\s*\\\\d+\\\\s*$', flags: 'u' },
-  { key: 'parenfullwidth', name: 'Fullwidth paren: （1.）', pattern: '^\\\\s*（\\\\s*\\\\d+\\\\s*\\\\.?\\\\s*）\\\\s*$', flags: 'u' }
-];
-
-// Helpers
-function setStatus(msg, type){
-  statusDiv.textContent = msg;
-  statusDiv.classList.remove('success','error');
-  if(type) statusDiv.classList.add(type);
-}
-function showProgress(){ progressContainer.style.display = 'block'; updateProgress(0,''); }
-function hideProgress(){ progressContainer.style.display = 'none'; }
-function updateProgress(pct, msg){
-  const v = Math.max(0, Math.min(100, Math.round(pct)));
-  progressBar.style.width = v + '%';
-  progressText.textContent = v + '%' + (msg ? (' – ' + msg) : '');
-}
-function safeFilename(name){
-  return String(name || '').replace(/[\u0000-\u001f]/g,'').replace(/[\\\/:*?"<>|]/g,'').replace(/\s+/g,'_').slice(0,180) || 'untitled';
-}
-function readFileAsText(file){ return new Promise((res, rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result||'')); r.onerror=rej; r.readAsText(file); }); }
-function readFileAsArrayBuffer(file){ return new Promise((res, rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsArrayBuffer(file); }); }
-function downloadFile(blob, filename){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1500); }
-function uuidv4(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{ const r=Math.random()*16|0, v=c==='x'?r:(r&0x3|0x8); return v.toString(16); }); }
-function escapeHtml(s){ const d=document.createElement('div'); d.innerText=s; return d.innerHTML; }
-function getCoverExtension(mime){ const map={'image/jpeg':'jpg','image/jpg':'jpg','image/png':'png','image/gif':'gif','image/webp':'webp','image/svg+xml':'svg'}; return map[mime] || 'img'; }
-
-// load / save customs
-function loadCustomTemplates(){
-  try{
-    const raw = localStorage.getItem(LS_KEY);
-    if(!raw) return [];
-    const arr = JSON.parse(raw);
-    if(!Array.isArray(arr)) return [];
-    return arr;
-  }catch(e){
-    console.error('Failed to load custom templates', e);
-    return [];
-  }
-}
-function saveCustomTemplates(arr){
-  try{
-    localStorage.setItem(LS_KEY, JSON.stringify(arr));
-  }catch(e){
-    console.error('Failed to save custom templates', e);
-  }
-}
-function resetCustomTemplates(){
-  localStorage.removeItem(LS_KEY);
-  renderTemplateOptions();
-  renderCustomList();
-  setStatus('Custom templates reset', 'success');
-}
-
-// Build full template list (builtins + customs)
-function getAllTemplateEntries(){
-  const customs = loadCustomTemplates();
-  const built = BUILTIN_TEMPLATES.map(t => ({ key: t.key, name: t.name, pattern: t.pattern, flags: t.flags, source: 'builtin' }));
-  const customEntries = customs.map(c => ({ key: 'custom_' + c.id, name: c.name, pattern: c.pattern, flags: c.flags, source: 'custom', id: c.id }));
-  return [{ key:'auto', name:'Auto Detect' }, ...built, ...customEntries];
-}
-
-// Render select options
-function renderTemplateOptions(){
-  const arr = getAllTemplateEntries();
-  chapterPatternSelect.innerHTML = '';
-  for(const e of arr){
-    const opt = document.createElement('option');
-    opt.value = e.key;
-    opt.textContent = e.name;
-    chapterPatternSelect.appendChild(opt);
-  }
-}
-
-// Render custom list UI (for deletion and quick test)
-function renderCustomList(){
-  const customs = loadCustomTemplates();
-  customListContainer.innerHTML = '';
-  if(customs.length===0){
-    customListContainer.innerHTML = '<div class="small muted">No custom templates saved.</div>';
-    return;
-  }
-  for(const c of customs){
-    const div = document.createElement('div');
-    div.className = 'custom-item';
-    const left = document.createElement('div');
-    left.className = 'col';
-    const title = document.createElement('div');
-    title.innerHTML = `<strong>${escapeHtml(c.name)}</strong> <span class="small muted">(${escapeHtml(c.flags||'')})</span>`;
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    meta.textContent = c.pattern;
-    left.appendChild(title);
-    left.appendChild(meta);
-
-    const right = document.createElement('div');
-    right.style.display = 'flex';
-    right.style.gap = '6px';
-    const useBtn = document.createElement('button');
-    useBtn.textContent = 'Use';
-    useBtn.addEventListener('click', ()=> {
-      // select this template in dropdown
-      renderTemplateOptions();
-      chapterPatternSelect.value = 'custom_' + c.id;
-      chapterPatternSelect.dispatchEvent(new Event('change'));
-      setStatus(`Selected custom template "${c.name}"`, 'success');
-    });
-    const delBtn = document.createElement('button');
-    delBtn.textContent = 'Delete';
-    delBtn.className = 'danger';
-    delBtn.addEventListener('click', ()=> {
-      if(!confirm(`Delete custom template "${c.name}"?`)) return;
-      const arr = loadCustomTemplates().filter(x => x.id !== c.id);
-      saveCustomTemplates(arr);
-      renderTemplateOptions();
-      renderCustomList();
-      setStatus(`Deleted custom template "${c.name}"`, 'success');
-    });
-    const testBtn = document.createElement('button');
-    testBtn.textContent = 'Preview';
-    testBtn.addEventListener('click', ()=> {
-      // run on loaded file (if present) or alert
-      if(!fileContent){ setStatus('Load a .txt file first to preview.', 'error'); return; }
-      try{
-        const rx = new RegExp(c.pattern, c.flags || '');
-        const lines = fileContent.split(/\r?\n/);
-        const matched = [];
-        for(let i=0;i<Math.min(lines.length,500); i++){
-          if(rx.test(lines[i])) matched.push(lines[i].trim());
-          if(matched.length>=8) break;
+        // Helpers
+        function setStatus(msg, type) {
+            statusDiv.textContent = msg;
+            statusDiv.classList.remove('success', 'error');
+            if (type) statusDiv.classList.add(type);
         }
-        matchPreview.style.display = 'block';
-        matchPreview.textContent = matched.length ? `Matches: ${matched.slice(0,6).join(' | ')}` : 'No matches in first 500 lines.';
-      }catch(err){
-        setStatus('Invalid regex saved (unexpected).', 'error');
-      }
-    });
 
-    right.appendChild(useBtn);
-    right.appendChild(testBtn);
-    right.appendChild(delBtn);
+        function showProgress() {
+            progressContainer.style.display = 'block';
+            updateProgress(0, '');
+        }
 
-    div.appendChild(left);
-    div.appendChild(right);
-    customListContainer.appendChild(div);
-  }
-}
+        function hideProgress() {
+            progressContainer.style.display = 'none';
+        }
 
-// Utility to create RegExp from template entry
-function templateToRegExp(entry){
-  try{
-    return new RegExp(entry.pattern, entry.flags || '');
-  }catch(e){
-    return null;
-  }
-}
+        function updateProgress(pct, msg) {
+            const v = Math.max(0, Math.min(100, Math.round(pct)));
+            progressBar.style.width = v + '%';
+            progressText.textContent = v + '%' + (msg ? ' ' + msg : '');
+        }
 
-// Detect pattern heuristic: returns entry object with rx if >1 occurrences
-function detectPatternInLines(lines){
-  const entries = getAllTemplateEntries().filter(e => e.key !== 'auto');
-  for(const e of entries){
-    const rx = templateToRegExp(e);
-    if(!rx) continue;
-    let count = 0;
-    for(let i=0;i<Math.min(lines.length,400); i++){
-      if(rx.test(lines[i])){ count++; if(count>1) return { entry: e, rx }; }
-    }
-  }
-  return null;
-}
+        function safeFilename(name) {
+            return String(name)
+                .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
+                .replace(/\.$/, '_')
+                .slice(0, 180) || 'untitled';
+        }
 
-// Show match preview for selection or auto
-function showMatchPreview(text){
-  if(!text){ matchPreview.style.display = 'none'; return; }
-  const lines = text.split(/\r?\n/);
-  const sel = chapterPatternSelect.value;
-  if(sel === 'auto'){
-    const det = detectPatternInLines(lines);
-    if(det){
-      const matched = [];
-      for(let i=0;i<Math.min(lines.length,500); i++){
-        if(det.rx.test(lines[i])) matched.push(lines[i].trim());
-        if(matched.length>=6) break;
-      }
-      matchPreview.style.display = 'block';
-      matchPreview.textContent = `Auto-detected (${det.entry.name}) — matches: ${matched.join(' | ')}`;
-    } else {
-      matchPreview.style.display = 'block';
-      matchPreview.textContent = 'Auto-detect found no repeated heading pattern in first 400 lines.';
-    }
-  } else {
-    // find entry by key
-    const all = getAllTemplateEntries();
-    const entry = all.find(x => x.key === sel);
-    if(!entry){ matchPreview.style.display = 'none'; return; }
-    const rx = templateToRegExp(entry);
-    if(!rx){
-      matchPreview.style.display = 'block';
-      matchPreview.textContent = 'This template has an invalid regex.';
-      return;
-    }
-    const matched = [];
-    for(let i=0;i<Math.min(lines.length,500); i++){
-      if(rx.test(lines[i])) matched.push(lines[i].trim());
-      if(matched.length>=6) break;
-    }
-    matchPreview.style.display = 'block';
-    matchPreview.textContent = matched.length ? `Matches: ${matched.join(' | ')}` : 'No matches in first 500 lines.';
-  }
-}
+        function readFileAsText(file) {
+            return new Promise((res, rej) => {
+                const r = new FileReader();
+                r.onload = () => res(String(r.result));
+                r.onerror = rej;
+                r.readAsText(file);
+            });
+        }
 
-// Split chapters using selected or autodetected template
-function splitChapters(text){
-  const lines = String(text).split(/\r?\n/);
-  const sel = chapterPatternSelect.value;
-  let rx = null;
-  if(sel === 'auto'){
-    const det = detectPatternInLines(lines);
-    rx = det ? det.rx : null;
-  } else {
-    const all = getAllTemplateEntries();
-    const entry = all.find(x => x.key === sel);
-    if(entry) rx = templateToRegExp(entry);
-  }
+        function readFileAsArrayBuffer(file) {
+            return new Promise((res, rej) => {
+                const r = new FileReader();
+                r.onload = () => res(r.result);
+                r.onerror = rej;
+                r.readAsArrayBuffer(file);
+            });
+        }
 
-  // update preview
-  showMatchPreview(text);
+        function downloadFile(blob, filename) {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+        }
 
-  const chapters = [];
-  let current = null;
-  const push = ()=> { if(current) chapters.push(current); };
+        function uuidv4() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
 
-  if(!rx){
-    chapters.push({ title: 'synopsis', content: text.trim() });
-    return chapters;
-  }
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.innerText = s;
+            return d.innerHTML;
+        }
 
-  let preface = [];
-  for(const raw of lines){
-    const line = String(raw||'');
-    const m = line.match(rx);
-    if(m){
-      push();
-      current = { title: line.trim(), content: '' };
-    } else {
-      if(!current) preface.push(line);
-      else current.content += line + '\n';
-    }
-  }
-  push();
-  chapters.unshift({ title: 'synopsis', content: preface.join('\n').trim() });
-  return chapters;
-}
+        function getCoverExtension(mime) {
+            const map = {
+                'image/jpeg': 'jpg',
+                'image/jpg': 'jpg',
+                'image/png': 'png',
+                'image/gif': 'gif',
+                'image/webp': 'webp',
+                'image/svg+xml': 'svg'
+            };
+            return map[mime] || 'img';
+        }
 
-// EPUB helpers (XHTML building)
-function buildXhtml(title, bodyText){
-  const paras = String(bodyText||'').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  const body = paras.map(p => `<p>${escapeHtml(p)}</p>`).join('\n');
-  return `<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh" lang="zh">\n<head>\n  <meta charset="utf-8" />\n  <title>${escapeHtml(title||'')}</title>\n</head>\n<body>\n  <h2>${escapeHtml(title||'')}</h2>\n  ${body}\n</body>\n</html>`;
-}
+        // Chapter detection templates
+        const CHAPTER_TEMPLATES = {
+            chinese: /第[0-9]+章.*/i,
+            chapter: /Chapter\s*[0-9]+.*/i,
+            ch: /Ch\.?\s*[0-9]+.*/i,
+            part: /Part\s*[IVX]+.*/i,
+            section: /Section\s*[0-9]+.*/i,
+            number: /^[0-9]+\.\s*.+/i,
+            dash: /^-\s*.+\s*-$/i,
+            titledot: /^[1-120]\.\s*[^.]+/i,
+            parenfullwidth: /（[^）]+）.*/i
+        };
 
-// ZIP creation (indexed filenames)
-async function createZipDownload(chapters){
-  showProgress();
-  updateProgress(5, 'Preparing ZIP…');
-  const zip = new JSZip();
-  const base = safeFilename((fileName || 'novel').replace(/\.txt$/i,''));
-  const total = chapters.length;
-  for(let i=0;i<total;i++){
-    const ch = chapters[i];
-    const namePart = (i===0) ? 'synopsis' : (ch.title || `chapter${i}`);
-    const index = String(i).padStart(3, '0');
-    const fname = `${index}_${safeFilename(namePart)}.txt`;
-    zip.file(fname, ch.content || '');
-    updateProgress(10 + (i/total)*80, `Adding ${fname}`);
-    await new Promise(r => setTimeout(r, 0));
-  }
-  updateProgress(95, 'Generating ZIP…');
-  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-  const outName = `${base}_chapters.zip`;
-  downloadFile(blob, outName);
-  updateProgress(100, 'Done');
-  hideProgress();
-  setStatus(`Downloaded ${outName}`, 'success');
-}
+        // Enhanced file validation
+        function validateFile(file) {
+            const issues = [];
+            
+            // Size validation
+            if (file.size > MAX_FILE_SIZE) {
+                issues.push({
+                    type: 'error',
+                    message: `File size (${(file.size / 1024 / 1024).toFixed(1)}MB) exceeds 50MB limit`
+                });
+            } else if (file.size > 10 * 1024 * 1024) {
+                issues.push({
+                    type: 'warning',
+                    message: `Large file (${(file.size / 1024 / 1024).toFixed(1)}MB) may take longer to process`
+                });
+            }
+            
+            // File type validation (basic)
+            if (!file.name.toLowerCase().endsWith('.txt') && file.type !== 'text/plain') {
+                issues.push({
+                    type: 'warning',
+                    message: 'File extension suggests this may not be a text file'
+                });
+            }
+            
+            return issues;
+        }
 
-// EPUB creation (indexed filenames)
-async function createEpubDownload(chapters){
-  showProgress();
-  updateProgress(5, 'Preparing EPUB…');
-  const zip = new JSZip();
-  const base = safeFilename((fileName || 'novel').replace(/\.txt$/i,''));
-  const bookId = uuidv4();
-  const titleMeta = (document.getElementById('metaTitle').value || base).trim();
-  const authorMeta = (document.getElementById('metaAuthor').value || 'Unknown').trim();
-  const lang = 'zh';
+        // Content-based file type detection
+        async function detectFileType(file) {
+            try {
+                const slice = file.slice(0, 1024); // First 1KB
+                const text = await readFileAsText(slice);
+                
+                // Check for common binary file signatures
+                const binaryMarkers = ['\x00', '\xFF\xD8', 'PK\x03\x04', '%PDF'];
+                const hasBinaryMarkers = binaryMarkers.some(marker => text.includes(marker));
+                
+                if (hasBinaryMarkers) {
+                    return { isText: false, confidence: 'high' };
+                }
+                
+                // Check text characteristics
+                const printableRatio = (text.match(/[\x20-\x7E\t\n\r]/g) || []).length / text.length;
+                const isText = printableRatio > 0.7;
+                
+                return {
+                    isText,
+                    confidence: printableRatio > 0.9 ? 'high' : printableRatio > 0.7 ? 'medium' : 'low'
+                };
+            } catch (error) {
+                return { isText: true, confidence: 'unknown' };
+            }
+        }
 
-  // mimetype first (stored)
-  zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+        // Show file preview
+        function showFilePreview(content) {
+            const lines = content.split('\n').slice(0, 10);
+            previewContent.textContent = lines.join('\n');
+            
+            // Detect potential encoding issues
+            const hasEncodingIssues = content.includes('�') || 
+                                      content.includes('\uFFFD') ||
+                                      (/[^\x00-\x7F]/.test(content) === false && content.length > 0);
+            
+            if (hasEncodingIssues) {
+                encodingInfo.textContent = '⚠️ Possible encoding issues detected';
+                encodingInfo.className = 'encoding-warning';
+            } else {
+                encodingInfo.textContent = '✓ Text encoding appears correct';
+                encodingInfo.className = 'encoding-ok';
+            }
+            
+            textPreview.style.display = 'block';
+        }
 
-  // container.xml
-  zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n  <rootfiles>\n    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>\n  </rootfiles>\n</container>`);
+        // Enhanced pattern detection with confidence scoring
+        function detectPatternWithConfidence(lines) {
+            const results = [];
+            
+            for (const [key, pattern] of Object.entries(CHAPTER_TEMPLATES)) {
+                const rx = new RegExp(pattern, 'i');
+                let matches = 0;
+                const matchedLines = [];
+                
+                for (let i = 0; i < Math.min(lines.length, 400); i++) {
+                    if (rx.test(lines[i])) {
+                        matches++;
+                        matchedLines.push({ line: i + 1, text: lines[i].trim() });
+                    }
+                }
+                
+                if (matches > 1) {
+                    const confidence = calculateConfidence(matches, lines.length, matchedLines);
+                    results.push({
+                        key,
+                        pattern,
+                        matches,
+                        matchedLines: matchedLines.slice(0, 5), // First 5 matches
+                        confidence
+                    });
+                }
+            }
+            
+            // Sort by confidence score
+            results.sort((a, b) => b.confidence - a.confidence);
+            return results[0] || null;
+        }
 
-  const oebps = zip.folder('OEBPS');
+        function calculateConfidence(matches, totalLines, matchedLines) {
+            // Base score from match frequency
+            let score = Math.min(matches / 20, 1) * 50; // Max 50 points for frequency
+            
+            // Regularity bonus (matches spread evenly)
+            if (matchedLines.length >= 3) {
+                const intervals = [];
+                for (let i = 1; i < matchedLines.length; i++) {
+                    intervals.push(matchedLines[i].line - matchedLines[i-1].line);
+                }
+                const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
+                const variance = intervals.reduce((acc, val) => acc + Math.pow(val - avgInterval, 2), 0) / intervals.length;
+                const regularityScore = Math.max(0, 30 - (variance / avgInterval * 10)); // Max 30 points
+                score += regularityScore;
+            }
+            
+            // Length consistency bonus
+            const lengths = matchedLines.map(m => m.text.length);
+            const avgLength = lengths.reduce((a, b) => a + b) / lengths.length;
+            if (avgLength > 5 && avgLength < 100) { // Reasonable chapter title length
+                score += 20; // Max 20 points
+            }
+            
+            return Math.min(Math.round(score), 100);
+        }
 
-  // optional cover image
-  let coverHref = null;
-  if(coverFile){
-    const ext = getCoverExtension(coverFile.type);
-    const ab = await readFileAsArrayBuffer(coverFile);
-    const coverName = `cover.${ext}`;
-    oebps.file(coverName, ab);
-    coverHref = coverName;
-  }
+        // Custom pattern testing
+        function testCustomPattern() {
+            const pattern = customRegex.value.trim();
+            const testContent = testText.value.trim();
+            
+            if (!pattern || !testContent) {
+                testResults.textContent = 'Please enter both a pattern and test text.';
+                return;
+            }
+            
+            try {
+                const rx = new RegExp(pattern, 'gim');
+                const lines = testContent.split('\n');
+                const matches = [];
+                
+                lines.forEach((line, index) => {
+                    const match = line.match(rx);
+                    if (match) {
+                        matches.push({
+                            line: index + 1,
+                            text: line.trim(),
+                            matched: match[0]
+                        });
+                    }
+                });
+                
+                if (matches.length === 0) {
+                    testResults.innerHTML = '<div style="color: #ff6b6b;">No matches found.</div>';
+                } else {
+                    const resultHtml = matches.map(m => 
+                        `<div><strong>Line ${m.line}:</strong> ${escapeHtml(m.text)}</div>`
+                    ).join('');
+                    testResults.innerHTML = `<div style="color: #7dd87d;">${matches.length} match(es) found:</div>${resultHtml}`;
+                }
+            } catch (error) {
+                testResults.innerHTML = `<div style="color: #ff6b6b;">Invalid regex pattern: ${error.message}</div>`;
+            }
+        }
 
-  const xhtmlFiles = [];
-  for(let i=0;i<chapters.length;i++){
-    const ch = chapters[i];
-    const namePart = (i===0) ? 'synopsis' : (ch.title || `chapter${i}`);
-    const index = String(i).padStart(3, '0');
-    const fname = `${index}_${safeFilename(namePart)}.xhtml`;
-    const xhtml = buildXhtml(ch.title, ch.content);
-    oebps.file(fname, xhtml);
-    xhtmlFiles.push({ id: `chap${i}`, href: fname, title: ch.title || `Chapter ${i}` });
-    updateProgress(10 + (i/chapters.length)*70, `Adding ${fname}`);
-    await new Promise(r => setTimeout(r, 0));
-  }
+        // Enhanced match preview display
+        function showEnhancedMatchPreview(detectionResult) {
+            if (!detectionResult) {
+                matchPreview.style.display = 'none';
+                return;
+            }
+            
+            // Show confidence score
+            confidenceScore.textContent = `Confidence: ${detectionResult.confidence}%`;
+            confidenceScore.className = detectionResult.confidence >= 70 ? 'confidence-high' : 
+                                        detectionResult.confidence >= 40 ? 'confidence-medium' : 'confidence-low';
+            
+            // Show match count
+            matchCount.textContent = `${detectionResult.matches} matches found`;
+            
+            // Show examples
+            const examples = detectionResult.matchedLines.map(m => 
+                `Line ${m.line}: ${escapeHtml(m.text)}`
+            ).join('\n');
+            
+            document.getElementById('matchExamples').innerHTML = 
+                `<strong>Pattern:</strong> ${detectionResult.key}<br>` +
+                `<strong>Examples:</strong><pre>${examples}</pre>`;
+            
+            matchPreview.style.display = 'block';
+        }
 
-  if(coverHref){
-    const coverXhtml = `<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${lang}" lang="${lang}">\n<head><meta charset="utf-8"/><title>Cover</title></head>\n<body style="margin:0;padding:0;text-align:center;">\n  <img src="${coverHref}" alt="Cover" style="max-width:100%;height:auto;"/>\n</body>\n</html>`;
-    oebps.file('cover.xhtml', coverXhtml);
-  }
+        function showValidationStatus(message, type) {
+            fileValidationStatus.textContent = message;
+            fileValidationStatus.className = `validation-status ${type}`;
+            fileValidationStatus.style.display = 'block';
+        }
 
-  // toc.ncx
-  const navMap = xhtmlFiles.map((f, idx) => `<navPoint id="navPoint-${idx+1}" playOrder="${idx+1}">\n  <navLabel><text>${escapeHtml(f.title)}</text></navLabel>\n  <content src="${f.href}"/>\n</navPoint>`).join('\n');
-  oebps.file('toc.ncx', `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">\n<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">\n  <head>\n    <meta name="dtb:uid" content="${bookId}"/>\n    <meta name="dtb:depth" content="1"/>\n    <meta name="dtb:totalPageCount" content="0"/>\n    <meta name="dtb:maxPageNumber" content="0"/>\n  </head>\n  <docTitle><text>${escapeHtml(titleMeta)}</text></docTitle>\n  <navMap>\n${navMap}\n  </navMap>\n</ncx>`);
+        function hideValidationStatus() {
+            fileValidationStatus.style.display = 'none';
+        }
 
-  // content.opf
-  const manifestItems = [];
-  const spineItems = [];
+        // detect which template appears more than once in first chunk
+        function detectPattern(lines) {
+            for (const [key, rx] of Object.entries(CHAPTER_TEMPLATES)) {
+                let c = 0;
+                for (let i = 0; i < Math.min(lines.length, 400); i++) {
+                    if (rx.test(lines[i])) c++;
+                }
+                if (c > 1) return { key, rx };
+            }
+            return null;
+        }
 
-  manifestItems.push(`<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>`);
-  if(coverHref){
-    manifestItems.push(`<item id="cover-image" href="${coverHref}" media-type="${coverFile.type || 'image/jpeg'}"/>`);
-    manifestItems.push(`<item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>`);
-    spineItems.push(`<itemref idref="cover" linear="yes"/>`);
-  }
-  for(const f of xhtmlFiles){
-    manifestItems.push(`<item id="${f.id}" href="${f.href}" media-type="application/xhtml+xml"/>`);
-    spineItems.push(`<itemref idref="${f.id}" linear="yes"/>`);
-  }
+        // show match preview for selected template (first few matches)
+        function showMatchPreviewForSelection(text) {
+            if (!text) {
+                matchPreview.style.display = 'none';
+                return;
+            }
+            
+            const lines = text.split('\n');
+            const selected = chapterPatternSelect.value;
+            
+            if (selected === 'auto') {
+                const detectionResult = detectPatternWithConfidence(lines);
+                showEnhancedMatchPreview(detectionResult);
+            } else if (selected === 'custom') {
+                const pattern = customRegex.value.trim();
+                if (pattern) {
+                    try {
+                        const rx = new RegExp(pattern, 'i');
+                        const matches = getExampleMatches(rx, lines);
+                        matchPreview.style.display = 'block';
+                        matchPreview.innerHTML = matches.length ? 
+                            `Custom pattern matches: ${matches.join(', ')}` :
+                            'No matches found for custom pattern in first 500 lines.';
+                    } catch (error) {
+                        matchPreview.style.display = 'block';
+                        matchPreview.innerHTML = `Invalid custom pattern: ${error.message}`;
+                    }
+                } else {
+                    matchPreview.style.display = 'none';
+                }
+            } else {
+                const rx = CHAPTER_TEMPLATES[selected];
+                if (!rx) {
+                    matchPreview.style.display = 'none';
+                    return;
+                }
+                const matches = getExampleMatches(rx, lines);
+                matchPreview.style.display = 'block';
+                matchPreview.textContent = matches.length ? 
+                    `Matches: ${matches.join(', ')}` :
+                    'No matches found for this template in the first 500 lines.';
+            }
+        }
 
-  const opf = `<?xml version="1.0" encoding="utf-8"?>\n<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="BookId">\n  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">\n    <dc:title>${escapeHtml(titleMeta)}</dc:title>\n    <dc:creator>${escapeHtml(authorMeta)}</dc:creator>\n    <dc:language>${lang}</dc:language>\n    <dc:identifier id="BookId">urn:uuid:${bookId}</dc:identifier>\n    ${coverHref ? '<meta name="cover" content="cover-image"/>' : ''}\n  </metadata>\n  <manifest>\n    ${manifestItems.join('\n    ')}\n  </manifest>\n  <spine toc="ncx">\n    ${spineItems.join('\n    ')}\n  </spine>\n</package>`;
-  oebps.file('content.opf', opf);
+        function getExampleMatches(rx, lines) {
+            const arr = [];
+            for (let i = 0; i < Math.min(lines.length, 500); i++) {
+                if (rx.test(lines[i])) {
+                    arr.push(lines[i].trim());
+                    if (arr.length >= 5) break;
+                }
+            }
+            return arr;
+        }
 
-  updateProgress(95, 'Packaging EPUB…');
-  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-  const outName = `${base}.epub`;
-  downloadFile(blob, outName);
-  updateProgress(100, 'Done');
-  hideProgress();
-  setStatus(`Downloaded ${outName}`, 'success');
-}
+        // splitting logic
+        function splitChapters(text) {
+            const lines = String(text).split('\n');
+            const selected = chapterPatternSelect.value;
+            
+            let headingInfo = null;
+            
+            if (selected === 'auto') {
+                headingInfo = detectPattern(lines);
+            } else if (selected === 'custom') {
+                const customPattern = customRegex.value.trim();
+                if (customPattern) {
+                    try {
+                        headingInfo = { 
+                            key: 'custom', 
+                            rx: new RegExp(customPattern, 'i') 
+                        };
+                    } catch (error) {
+                        console.error('Invalid custom regex:', error);
+                        headingInfo = null;
+                    }
+                }
+            } else {
+                const rx = CHAPTER_TEMPLATES[selected];
+                headingInfo = rx ? { key: selected, rx } : null;
+            }
+            
+            const chapters = [];
+            let current = null;
+            
+            const pushCurrent = () => {
+                if (current) chapters.push(current);
+            };
+            
+            if (!headingInfo?.rx) {
+                // no heading pattern; entire text as single entry
+                chapters.push({ title: 'synopsis', content: text.trim() });
+                return chapters;
+            }
+            
+            const rx = headingInfo.rx;
+            let preface = [];
+            
+            for (const raw of lines) {
+                const line = String(raw);
+                const m = line.match(rx);
+                
+                if (m) {
+                    pushCurrent();
+                    current = { title: line.trim(), content: '' };
+                } else {
+                    if (!current) {
+                        preface.push(line);
+                    } else {
+                        current.content += line + '\n';
+                    }
+                }
+            }
+            
+            pushCurrent();
+            
+            if (preface.join('\n').trim()) {
+                chapters.unshift({ title: 'synopsis', content: preface.join('\n').trim() });
+            }
+            
+            return chapters;
+        }
 
-// Event wiring
-function initializeUI(){
-  renderTemplateOptions();
-  renderCustomList();
-}
+        // build XHTML for EPUB chapter
+        function buildXhtml(title, bodyText) {
+            const paras = String(bodyText)
+                .split('\n')
+                .map(s => s.trim())
+                .filter(Boolean);
+            const body = paras.map(p => `<p>${escapeHtml(p)}</p>`).join('\n');
+            
+            return `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh" lang="zh">
+<head>
+    <meta charset="utf-8"/>
+    <title>${escapeHtml(title)}</title>
+</head>
+<body>
+    <h2>${escapeHtml(title)}</h2>
+    ${body}
+</body>
+</html>`;
+        }
 
-fileInput.addEventListener('change', async (e) => {
-  const f = e.target.files && e.target.files[0];
-  if(!f){ setStatus('No file selected', 'error'); return; }
-  if(!(f.type === 'text/plain' || /\.txt$/i.test(f.name))){ setStatus('Please choose a .txt file.', 'error'); return; }
-  try{
-    showProgress(); updateProgress(5, 'Reading file…');
-    fileContent = await readFileAsText(f);
-    fileName = f.name || 'novel.txt';
-    fileNameInfo.textContent = `Loaded: ${fileName}`;
-    setStatus(`Loaded: ${fileName}`, 'success');
-    processZipBtn.disabled = false; processEpubBtn.disabled = false;
-    showMatchPreview(fileContent);
-    updateProgress(100, 'Ready');
-    setTimeout(hideProgress, 300);
-  }catch(err){
-    console.error(err); hideProgress(); setStatus('Failed to read file.', 'error');
-  }
-});
+        // ZIP creation with indexed filenames
+        async function createZipDownload(chapters) {
+            showProgress();
+            updateProgress(5, 'Preparing ZIP...');
+            
+            const zip = new JSZip();
+            const base = safeFilename(fileName.replace(/\.txt$/i, '') || 'novel');
+            const total = chapters.length;
+            
+            for (let i = 0; i < total; i++) {
+                const ch = chapters[i];
+                const namePart = i === 0 ? 'synopsis' : ch.title || `chapter${i}`;
+                const index = String(i).padStart(3, '0');
+                const fname = `${index}-${safeFilename(namePart)}.txt`;
+                
+                zip.file(fname, ch.content);
+                updateProgress(10 + (i / total) * 80, `Adding ${fname}...`);
+                
+                // yield for UI responsiveness
+                await new Promise(r => setTimeout(r, 0));
+            }
+            
+            updateProgress(95, 'Generating ZIP...');
+            const blob = await zip.generateAsync({ 
+                type: 'blob', 
+                compression: 'DEFLATE', 
+                compressionOptions: { level: 6 } 
+            });
+            
+            const outName = `${base}-chapters.zip`;
+            downloadFile(blob, outName);
+            
+            updateProgress(100, 'Done!');
+            hideProgress();
+            setStatus(`Downloaded ${outName}`, 'success');
+        }
 
-coverInput.addEventListener('change', e => {
-  coverFile = e.target.files && e.target.files[0] ? e.target.files[0] : null;
-  if(coverFile){
-    if(!String(coverFile.type || '').startsWith('image/')){ setStatus('Cover must be an image file.', 'error'); coverFile = null; coverNameInfo.textContent = ''; return; }
-    coverNameInfo.textContent = `Cover: ${coverFile.name}`;
-    setStatus(`Cover loaded: ${coverFile.name}`, 'success');
-  } else { coverNameInfo.textContent = ''; }
-});
+        // EPUB creation with indexed filenames
+        async function createEpubDownload(chapters) {
+            showProgress();
+            updateProgress(5, 'Preparing EPUB...');
+            
+            const zip = new JSZip();
+            const base = safeFilename(fileName.replace(/\.txt$/i, '') || 'novel');
+            const bookId = uuidv4();
+            const titleMeta = metaTitle.value.trim() || base;
+            const authorMeta = metaAuthor.value.trim() || 'Unknown';
+            const lang = 'zh';
+            
+            // mimetype first (and stored, no compression)
+            zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+            
+            // META-INF/container.xml
+            zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+    <rootfiles>
+        <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+    </rootfiles>
+</container>`);
+            
+            const oebps = zip.folder('OEBPS');
+            
+            // optional cover image
+            let coverHref = null;
+            if (coverFile) {
+                const ext = getCoverExtension(coverFile.type);
+                const ab = await readFileAsArrayBuffer(coverFile);
+                const coverName = `cover.${ext}`;
+                oebps.file(coverName, ab);
+                coverHref = coverName;
+            }
+            
+            // create XHTML files with indexed filenames
+            const xhtmlFiles = [];
+            for (let i = 0; i < chapters.length; i++) {
+                const ch = chapters[i];
+                const namePart = i === 0 ? 'synopsis' : ch.title || `Chapter ${i}`;
+                const index = String(i).padStart(3, '0');
+                const fname = `${index}-${safeFilename(namePart)}.xhtml`;
+                const xhtml = buildXhtml(ch.title, ch.content);
+                
+                oebps.file(fname, xhtml);
+                xhtmlFiles.push({
+                    id: `chap${i}`,
+                    href: fname,
+                    title: ch.title
+                });
+                
+                updateProgress(10 + (i / chapters.length) * 70, `Adding ${fname}...`);
+                await new Promise(r => setTimeout(r, 0));
+            }
+            
+            // optional cover.xhtml (kept as cover.xhtml so readers can detect it)
+            if (coverHref) {
+                const coverXhtml = `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${lang}" lang="${lang}">
+<head><meta charset="utf-8"/><title>Cover</title></head>
+<body style="margin:0;padding:0;text-align:center;">
+    <img src="${coverHref}" alt="Cover" style="max-width:100%;height:auto;"/>
+</body>
+</html>`;
+                oebps.file('cover.xhtml', coverXhtml);
+            }
+            
+            // toc.ncx
+            const navMapEntries = xhtmlFiles.map((f, idx) =>
+                `    <navPoint id="navPoint-${idx + 1}" playOrder="${idx + 1}">
+        <navLabel><text>${escapeHtml(f.title)}</text></navLabel>
+        <content src="${f.href}"/>
+    </navPoint>`
+            ).join('\n');
+            
+            oebps.file('toc.ncx', `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+<head>
+    <meta name="dtb:uid" content="${bookId}"/>
+    <meta name="dtb:depth" content="1"/>
+    <meta name="dtb:totalPageCount" content="0"/>
+    <meta name="dtb:maxPageNumber" content="0"/>
+</head>
+<docTitle><text>${escapeHtml(titleMeta)}</text></docTitle>
+<navMap>
+${navMapEntries}
+</navMap>
+</ncx>`);
+            
+            // content.opf
+            const manifestItems = [];
+            const spineItems = [];
+            
+            manifestItems.push(`    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>`);
+            
+            if (coverHref) {
+                manifestItems.push(`    <item id="cover-image" href="${coverHref}" media-type="${coverFile.type || 'image/jpeg'}"/>`);
+                manifestItems.push(`    <item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>`);
+                spineItems.push(`    <itemref idref="cover" linear="yes"/>`);
+            }
+            
+            for (const f of xhtmlFiles) {
+                manifestItems.push(`    <item id="${f.id}" href="${f.href}" media-type="application/xhtml+xml"/>`);
+                spineItems.push(`    <itemref idref="${f.id}" linear="yes"/>`);
+            }
+            
+            const opf = `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="BookId">
+<metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+    <dc:title>${escapeHtml(titleMeta)}</dc:title>
+    <dc:creator>${escapeHtml(authorMeta)}</dc:creator>
+    <dc:language>${lang}</dc:language>
+    <dc:identifier id="BookId" opf:scheme="uuid">urn:uuid:${bookId}</dc:identifier>
+    ${coverHref ? '<meta name="cover" content="cover-image"/>' : ''}
+</metadata>
+<manifest>
+${manifestItems.join('\n')}
+</manifest>
+<spine toc="ncx">
+${spineItems.join('\n')}
+</spine>
+</package>`;
+            
+            oebps.file('content.opf', opf);
+            
+            updateProgress(95, 'Packaging EPUB...');
+            const blob = await zip.generateAsync({ 
+                type: 'blob', 
+                compression: 'DEFLATE', 
+                compressionOptions: { level: 6 } 
+            });
+            
+            const outName = `${base}.epub`;
+            downloadFile(blob, outName);
+            
+            updateProgress(100, 'Done!');
+            hideProgress();
+            setStatus(`Downloaded ${outName}`, 'success');
+        }
 
-chapterPatternSelect.addEventListener('change', ()=> { if(fileContent) showMatchPreview(fileContent); });
+        // Enhanced file selection handler
+        async function handleFileSelection(file) {
+            // Clear previous status
+            hideValidationStatus();
+            textPreview.style.display = 'none';
+            
+            // Validate file
+            const issues = validateFile(file);
+            const criticalError = issues.find(issue => issue.type === 'error');
+            
+            if (criticalError) {
+                showValidationStatus(criticalError.message, 'error');
+                return;
+            }
+            
+            // Show warnings
+            const warnings = issues.filter(issue => issue.type === 'warning');
+            if (warnings.length > 0) {
+                showValidationStatus(warnings.map(w => w.message).join('; '), 'warning');
+            }
+            
+            // Detect file type
+            const typeDetection = await detectFileType(file);
+            if (!typeDetection.isText) {
+                showValidationStatus('This appears to be a binary file, not a text file.', 'error');
+                return;
+            }
+            
+            try {
+                showProgress();
+                updateProgress(5, 'Reading file...');
+                
+                fileContent = await readFileAsText(file);
+                fileName = file.name.replace(/\.[^/.]+$/, '') || 'novel.txt';
+                
+                updateProgress(50, 'Analyzing content...');
+                
+                // Show file preview
+                showFilePreview(fileContent);
+                
+                // Enhanced pattern detection
+                const lines = fileContent.split('\n');
+                const detectionResult = detectPatternWithConfidence(lines);
+                showEnhancedMatchPreview(detectionResult);
+                
+                updateProgress(100, 'Ready');
+                setStatus(`Loaded ${fileName} (${(file.size / 1024).toFixed(1)}KB)`, 'success');
+                
+                processZipBtn.disabled = false;
+                processEpubBtn.disabled = false;
+                
+                fileNameInfo.textContent = `Loaded: ${file.name}`;
+                
+                setTimeout(hideProgress, 300);
+            } catch (error) {
+                console.error(error);
+                hideProgress();
+                showValidationStatus('Failed to read file. Please try a different encoding.', 'error');
+            }
+        }
 
-processZipBtn.addEventListener('click', async () => {
-  if(!fileContent){ setStatus('Select a .txt file first.', 'error'); return; }
-  try{
-    setStatus('Processing ZIP…');
-    const chapters = splitChapters(fileContent);
-    await createZipDownload(chapters);
-  }catch(err){
-    console.error(err); setStatus('Error creating ZIP.', 'error');
-  }
-});
+        // Drag and drop event handlers
+        fileDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('drag-over');
+        });
 
-processEpubBtn.addEventListener('click', async () => {
-  if(!fileContent){ setStatus('Select a .txt file first.', 'error'); return; }
-  try{
-    setStatus('Processing EPUB…');
-    const chapters = splitChapters(fileContent);
-    await createEpubDownload(chapters);
-  }catch(err){
-    console.error(err); setStatus('Error creating EPUB.', 'error');
-  }
-});
+        fileDropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('drag-over');
+        });
 
-// Add custom template
-addCustomBtn.addEventListener('click', ()=> {
-  const name = (customName.value || '').trim();
-  const pattern = (customPattern.value || '').trim();
-  const flags = (customFlags.value || '').trim();
-  customMsg.textContent = '';
-  if(!name || !pattern){ customMsg.textContent = 'Please provide both name and pattern.'; return; }
-  try{
-    // validate pattern
-    new RegExp(pattern, flags);
-  }catch(err){
-    customMsg.textContent = 'Invalid regex: ' + (err.message || '');
-    return;
-  }
-  // save
-  const arr = loadCustomTemplates();
-  const id = uuidv4();
-  arr.push({ id, name, pattern, flags });
-  saveCustomTemplates(arr);
-  renderTemplateOptions();
-  renderCustomList();
-  customName.value = ''; customPattern.value = ''; customFlags.value = ''; customTest.value = '';
-  setStatus(`Saved custom template "${name}"`, 'success');
-  // select new template
-  chapterPatternSelect.value = 'custom_' + id;
-  showMatchPreview(fileContent);
-});
+        fileDropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('drag-over');
+            
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length > 1) {
+                showValidationStatus('Please drop only one file at a time.', 'error');
+                return;
+            }
+            
+            if (files.length === 1) {
+                await handleFileSelection(files[0]);
+            }
+        });
 
-// Test custom regex without saving
-testCustomBtn.addEventListener('click', ()=> {
-  const pattern = (customPattern.value || '').trim();
-  const flags = (customFlags.value || '').trim();
-  const testStr = (customTest.value || '').trim();
-  customMsg.textContent = '';
-  if(!pattern){ customMsg.textContent = 'Enter a pattern to test.'; return; }
-  try{
-    const rx = new RegExp(pattern, flags);
-    const source = testStr || fileContent || '';
-    if(!source){ customMsg.textContent = 'No input (load a file or provide test string).'; return; }
-    const lines = source.split(/\r?\n/);
-    const matched = [];
-    for(let i=0;i<Math.min(lines.length,500); i++){
-      if(rx.test(lines[i])) matched.push(lines[i].trim());
-      if(matched.length>=8) break;
-    }
-    matchPreview.style.display = 'block';
-    matchPreview.textContent = matched.length ? `Matches: ${matched.join(' | ')}` : 'No matches found.';
-  }catch(err){
-    customMsg.textContent = 'Invalid regex: ' + (err.message || '');
-  }
-});
+        // Event handlers
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                await handleFileSelection(file);
+            }
+        });
 
-// Reset custom templates
-resetCustomBtn.addEventListener('click', ()=> {
-  if(!confirm('Remove all custom templates? This cannot be undone.')) return;
-  resetCustomTemplates();
-});
+        coverInput.addEventListener('change', (e) => {
+            coverFile = e.target.files?.[0] ? e.target.files[0] : null;
+            if (coverFile) {
+                if (!String(coverFile.type).startsWith('image/')) {
+                    setStatus('Cover must be an image file.', 'error');
+                    coverFile = null;
+                    coverNameInfo.textContent = '';
+                    return;
+                }
+                coverNameInfo.textContent = `Cover: ${coverFile.name}`;
+                setStatus(`Cover loaded: ${coverFile.name}`, 'success');
+            } else {
+                coverNameInfo.textContent = '';
+            }
+        });
 
-// initial render
-initializeUI();
-</script>
+        // Pattern selection handler
+        chapterPatternSelect.addEventListener('change', () => {
+            const selected = chapterPatternSelect.value;
+            
+            if (selected === 'custom') {
+                customPatternInput.style.display = 'block';
+                patternTester.style.display = 'block';
+            } else {
+                customPatternInput.style.display = 'none';
+                patternTester.style.display = 'none';
+            }
+            
+            if (fileContent) {
+                showMatchPreviewForSelection(fileContent);
+            }
+        });
+
+        // Test pattern button
+        testPatternBtn.addEventListener('click', testCustomPattern);
+
+        processZipBtn.addEventListener('click', async () => {
+            if (!fileContent) {
+                setStatus('Select a .txt file first.', 'error');
+                return;
+            }
+            setStatus('Processing ZIP...');
+            try {
+                const chapters = splitChapters(fileContent);
+                await createZipDownload(chapters);
+            } catch (err) {
+                console.error(err);
+                setStatus('Error creating ZIP.', 'error');
+            }
+        });
+
+        processEpubBtn.addEventListener('click', async () => {
+            if (!fileContent) {
+                setStatus('Select a .txt file first.', 'error');
+                return;
+            }
+            setStatus('Processing EPUB...');
+            try {
+                const chapters = splitChapters(fileContent);
+                await createEpubDownload(chapters);
+            } catch (err) {
+                console.error(err);
+                setStatus('Error creating EPUB.', 'error');
+            }
+        });
+    </script>
 </body>
 </html>
