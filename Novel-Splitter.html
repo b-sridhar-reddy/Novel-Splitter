@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Novel Chapter Splitter (ZIP & EPUB)</title>
+  <title>Novel Chapter Splitter — with Custom Templates</title>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
     integrity="sha512-+S6mdcRvj3e8yoU0u3vTqq7tMqgCydoD4rJ6xLe3rC0tG5x3biv4nhvE60aR1x9n2h2JmLQFhWClQqS7Q3bX0g=="
@@ -17,23 +17,24 @@
       background: #0b0c10;
       color: #e6edf3;
     }
-    .wrap { max-width: 820px; margin: auto; padding: 24px; }
-    h1 { font-size: 24px; margin: 0 0 12px; }
+    .wrap { max-width: 920px; margin: auto; padding: 24px; }
+    h1 { font-size: 22px; margin: 0 0 12px; }
     p.lead { opacity: .85; margin: 0 0 16px; }
     .card { background: #11151a; border: 1px solid #1f2630; border-radius: 12px; padding: 16px; }
     label { display:block; margin:8px 0 6px; font-weight:600; }
-    input[type="file"], select, input[type="text"] {
+    input[type="file"], select, input[type="text"], textarea {
       width:100%; display:block; padding:10px; border-radius:8px;
       border:1px solid #26313f; background:#0d1117; color:#e6edf3;
     }
     .row { display:grid; grid-template-columns:1fr; gap:12px; }
-    @media(min-width:720px){ .row{ grid-template-columns:1fr 1fr; } }
+    @media(min-width:860px){ .row{ grid-template-columns:1fr 1fr; } }
     .btns { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
     button {
       appearance:none; border:1px solid #2b3441; background:#0f141b; color:#e6edf3;
       padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
     }
     button.primary { background:#1f6feb; border-color:#1f6feb; }
+    button.danger { background:#2b1218; border-color:#7a1e26; }
     button:disabled { opacity:.5; cursor:not-allowed; }
     .status { margin-top:12px; padding:10px; border-radius:8px; background:#0d1117; border:1px solid #222b36; }
     .status.success { border-color:#1a7f37; }
@@ -43,16 +44,20 @@
     .progress .txt { font-size:12px; padding:6px 8px; opacity:.85; }
     .muted { opacity:.7; }
     .small { font-size:12px; }
-    .match-preview { margin-top:8px; font-size:12px; color:#9fb7ff; }
-    .meta-row { display:flex; gap:8px; margin-top:8px; align-items:center; }
-    .meta-row > * { flex:1; }
-    .meta-label { font-size:12px; opacity:.8; }
+    .match-preview { margin-top:8px; font-size:13px; color:#9fb7ff; }
+    .flex { display:flex; gap:10px; align-items:center; }
+    .col { display:flex; flex-direction:column; gap:8px; }
+    .custom-list { margin-top:8px; border-top:1px dashed #23313f; padding-top:8px; }
+    .custom-item { display:flex; gap:8px; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.02); }
+    .custom-item .meta { font-size:13px; color:#9fb7ff; }
+    .help { font-size:12px; color:#9fb7ff; margin-top:6px; }
+    .inline { display:inline-block; vertical-align:middle; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>📖 Novel Chapter Splitter</h1>
-    <p class="lead">Load a <strong>.txt</strong> novel, optionally add a cover image, choose chapter-detection template (or Auto Detect), then export chapters as a <strong>ZIP</strong> of .txt files or as an <strong>EPUB</strong>. All client-side.</p>
+    <h1>📖 Novel Chapter Splitter — Custom Templates</h1>
+    <p class="lead">Add custom regex templates for chapter headings, test them, and persist for future use. Works with ZIP and EPUB exports (index-prefixed filenames).</p>
 
     <div class="card">
       <div class="row">
@@ -61,6 +66,7 @@
           <input id="fileInput" type="file" accept=".txt,text/plain">
           <div id="fileNameInfo" class="small muted"></div>
         </div>
+
         <div>
           <label for="coverInput">Optional cover image</label>
           <input id="coverInput" type="file" accept="image/*">
@@ -69,32 +75,23 @@
       </div>
 
       <div style="margin-top:10px">
-        <label for="chapterPattern">Chapter heading format</label>
-        <select id="chapterPattern">
-          <option value="auto" selected>Auto Detect</option>
-          <option value="chinese">Chinese: 第12章 …</option>
-          <option value="chapter">English: Chapter 12 …</option>
-          <option value="ch">English: Ch. 12 …</option>
-          <option value="titledot">Title.Number: 标题.1 (e.g. 作为新房客的第一天.1)</option>
-          <option value="parenfullwidth">Fullwidth paren: （1.）</option>
-        </select>
+        <label for="chapterPattern">Chapter template</label>
+        <select id="chapterPattern"></select>
         <div id="matchPreview" class="match-preview" style="display:none"></div>
       </div>
 
-      <div class="meta-row" style="margin-top:12px">
-        <div>
-          <label class="meta-label">EPUB metadata (optional)</label>
+      <div style="margin-top:12px" class="col">
+        <label class="meta-label">EPUB metadata (optional)</label>
+        <div class="flex">
           <input id="metaTitle" type="text" placeholder="Title (defaults to filename)">
-        </div>
-        <div>
-          <label class="meta-label" style="visibility:hidden">author</label>
           <input id="metaAuthor" type="text" placeholder="Author (optional)">
         </div>
       </div>
 
-      <div class="btns">
+      <div class="btns" style="margin-top:12px">
         <button id="processZipBtn" class="primary" disabled>Split & Download ZIP</button>
         <button id="processEpubBtn" disabled>Split & Download EPUB</button>
+        <button id="resetCustomBtn" class="danger" title="Remove all custom templates">Reset custom templates</button>
       </div>
 
       <div id="progressContainer" class="progress">
@@ -103,11 +100,50 @@
       </div>
 
       <div id="status" class="status small">Waiting for a .txt file…</div>
-      <div class="small muted" style="margin-top:8px">Note: filenames inside ZIP/EPUB are zero-padded (000_, 001_, …) so they sort correctly.</div>
+
+      <hr style="margin:12px 0 8px;border:none;border-top:1px solid #1f2832"/>
+
+      <h3 style="margin:0 0 8px;font-size:16px">Custom regex templates</h3>
+
+      <div class="row">
+        <div>
+          <label for="customName">Name</label>
+          <input id="customName" type="text" placeholder="e.g. My numbering style">
+        </div>
+        <div>
+          <label for="customPattern">Regex pattern</label>
+          <input id="customPattern" type="text" placeholder="e.g. ^\s*第\s*\d+\s*章.*$  (enter without surrounding / /)">
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <div style="max-width:160px">
+          <label for="customFlags">Flags</label>
+          <input id="customFlags" type="text" placeholder="e.g. iu">
+        </div>
+        <div>
+          <label class="help">Test string (optional): will run new regex against file to show matches)</label>
+          <input id="customTest" type="text" placeholder="Optional quick test text">
+        </div>
+      </div>
+
+      <div class="flex" style="margin-top:8px">
+        <button id="addCustomBtn">Add & Save template</button>
+        <button id="testCustomBtn">Test regex (no save)</button>
+        <div id="customMsg" class="small muted"></div>
+      </div>
+
+      <div class="custom-list" id="customListContainer"></div>
+
+      <div class="small muted" style="margin-top:12px">Storage: custom templates saved locally in your browser (localStorage). Use <strong>Reset custom templates</strong> to remove them.</div>
     </div>
   </div>
 
 <script>
+/* Complete app with custom template CRUD + persistence in localStorage.
+   Key localStorage key: novel_splitter_custom_templates
+*/
+
 'use strict';
 
 // DOM refs
@@ -118,18 +154,41 @@ const fileNameInfo = document.getElementById('fileNameInfo');
 const coverNameInfo = document.getElementById('coverNameInfo');
 const processZipBtn = document.getElementById('processZipBtn');
 const processEpubBtn = document.getElementById('processEpubBtn');
+const resetCustomBtn = document.getElementById('resetCustomBtn');
 const progressContainer = document.getElementById('progressContainer');
 const progressBar = document.getElementById('progressBar');
 const progressText = document.getElementById('progressText');
 const statusDiv = document.getElementById('status');
 const matchPreview = document.getElementById('matchPreview');
+
 const metaTitle = document.getElementById('metaTitle');
 const metaAuthor = document.getElementById('metaAuthor');
+
+const customName = document.getElementById('customName');
+const customPattern = document.getElementById('customPattern');
+const customFlags = document.getElementById('customFlags');
+const customTest = document.getElementById('customTest');
+const addCustomBtn = document.getElementById('addCustomBtn');
+const testCustomBtn = document.getElementById('testCustomBtn');
+const customMsg = document.getElementById('customMsg');
+const customListContainer = document.getElementById('customListContainer');
 
 // State
 let fileContent = '';
 let fileName = '';
 let coverFile = null;
+
+// LocalStorage key
+const LS_KEY = 'novel_splitter_custom_templates_v1';
+
+// Built-in templates (pattern string and flags)
+const BUILTIN_TEMPLATES = [
+  { key: 'chinese', name: 'Chinese: 第12章 …', pattern: '^\\\\s*第\\\\s*([0-9]+)\\\\s*章[\\\\.。:\\\\s]?.*$', flags: 'i' },
+  { key: 'chapter', name: 'English: Chapter 12 …', pattern: '^\\\\s*Chapter\\\\s*([0-9]+)\\\\b.*$', flags: 'i' },
+  { key: 'ch', name: 'English: Ch. 12 …', pattern: '^\\\\s*Ch(?:apter)?\\\\.?\\\\s*([0-9]+)\\\\b.*$', flags: 'i' },
+  { key: 'titledot', name: 'Title.Number: 标题.1 …', pattern: '^\\\\s*([^\\\\r\\\\n]{1,120})\\\\.\\\\s*\\\\d+\\\\s*$', flags: 'u' },
+  { key: 'parenfullwidth', name: 'Fullwidth paren: （1.）', pattern: '^\\\\s*（\\\\s*\\\\d+\\\\s*\\\\.?\\\\s*）\\\\s*$', flags: 'u' }
+];
 
 // Helpers
 function setStatus(msg, type){
@@ -145,175 +204,263 @@ function updateProgress(pct, msg){
   progressText.textContent = v + '%' + (msg ? (' – ' + msg) : '');
 }
 function safeFilename(name){
-  return String(name || '')
-    .replace(/[\u0000-\u001f]/g, '')
-    .replace(/[\\\/:*?"<>|]/g, '')
-    .replace(/\s+/g, '_')
-    .slice(0, 180) || 'untitled';
+  return String(name || '').replace(/[\u0000-\u001f]/g,'').replace(/[\\\/:*?"<>|]/g,'').replace(/\s+/g,'_').slice(0,180) || 'untitled';
 }
-function readFileAsText(file){
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(String(r.result || ''));
-    r.onerror = rej;
-    r.readAsText(file);
-  });
+function readFileAsText(file){ return new Promise((res, rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result||'')); r.onerror=rej; r.readAsText(file); }); }
+function readFileAsArrayBuffer(file){ return new Promise((res, rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsArrayBuffer(file); }); }
+function downloadFile(blob, filename){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1500); }
+function uuidv4(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{ const r=Math.random()*16|0, v=c==='x'?r:(r&0x3|0x8); return v.toString(16); }); }
+function escapeHtml(s){ const d=document.createElement('div'); d.innerText=s; return d.innerHTML; }
+function getCoverExtension(mime){ const map={'image/jpeg':'jpg','image/jpg':'jpg','image/png':'png','image/gif':'gif','image/webp':'webp','image/svg+xml':'svg'}; return map[mime] || 'img'; }
+
+// load / save customs
+function loadCustomTemplates(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    if(!Array.isArray(arr)) return [];
+    return arr;
+  }catch(e){
+    console.error('Failed to load custom templates', e);
+    return [];
+  }
 }
-function readFileAsArrayBuffer(file){
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result);
-    r.onerror = rej;
-    r.readAsArrayBuffer(file);
-  });
+function saveCustomTemplates(arr){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify(arr));
+  }catch(e){
+    console.error('Failed to save custom templates', e);
+  }
 }
-function downloadFile(blob, filename){
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-}
-function uuidv4(){
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-function escapeHtml(s){
-  const d = document.createElement('div');
-  d.innerText = s;
-  return d.innerHTML;
-}
-function getCoverExtension(mime){
-  const map = {'image/jpeg':'jpg','image/jpg':'jpg','image/png':'png','image/gif':'gif','image/webp':'webp','image/svg+xml':'svg'};
-  return map[mime] || 'img';
+function resetCustomTemplates(){
+  localStorage.removeItem(LS_KEY);
+  renderTemplateOptions();
+  renderCustomList();
+  setStatus('Custom templates reset', 'success');
 }
 
-// Chapter detection templates
-const CHAPTER_TEMPLATES = {
-  chinese: /^\s*第\s*([0-9]+)\s*章[\.。:\s]?.*$/i,
-  chapter: /^\s*Chapter\s*([0-9]+)\b.*$/i,
-  ch: /^\s*Ch(?:apter)?\.?\s*([0-9]+)\b.*$/i,
-  titledot: /^\s*([^\r\n]{1,120})\.\s*\d+\s*$/u,           // e.g. 作为新房客的第一天.1
-  parenfullwidth: /^\s*（\s*\d+\s*\.?\s*）\s*$/u         // e.g. （1.）
-};
+// Build full template list (builtins + customs)
+function getAllTemplateEntries(){
+  const customs = loadCustomTemplates();
+  const built = BUILTIN_TEMPLATES.map(t => ({ key: t.key, name: t.name, pattern: t.pattern, flags: t.flags, source: 'builtin' }));
+  const customEntries = customs.map(c => ({ key: 'custom_' + c.id, name: c.name, pattern: c.pattern, flags: c.flags, source: 'custom', id: c.id }));
+  return [{ key:'auto', name:'Auto Detect' }, ...built, ...customEntries];
+}
 
-// detect which template appears more than once in first chunk
-function detectPattern(lines){
-  for(const key in CHAPTER_TEMPLATES){
-    const rx = CHAPTER_TEMPLATES[key];
-    let c = 0;
-    for(let i=0;i<Math.min(lines.length, 400); i++){
-      if(rx.test(lines[i])){ c++; if(c>1) return {key, rx}; }
+// Render select options
+function renderTemplateOptions(){
+  const arr = getAllTemplateEntries();
+  chapterPatternSelect.innerHTML = '';
+  for(const e of arr){
+    const opt = document.createElement('option');
+    opt.value = e.key;
+    opt.textContent = e.name;
+    chapterPatternSelect.appendChild(opt);
+  }
+}
+
+// Render custom list UI (for deletion and quick test)
+function renderCustomList(){
+  const customs = loadCustomTemplates();
+  customListContainer.innerHTML = '';
+  if(customs.length===0){
+    customListContainer.innerHTML = '<div class="small muted">No custom templates saved.</div>';
+    return;
+  }
+  for(const c of customs){
+    const div = document.createElement('div');
+    div.className = 'custom-item';
+    const left = document.createElement('div');
+    left.className = 'col';
+    const title = document.createElement('div');
+    title.innerHTML = `<strong>${escapeHtml(c.name)}</strong> <span class="small muted">(${escapeHtml(c.flags||'')})</span>`;
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = c.pattern;
+    left.appendChild(title);
+    left.appendChild(meta);
+
+    const right = document.createElement('div');
+    right.style.display = 'flex';
+    right.style.gap = '6px';
+    const useBtn = document.createElement('button');
+    useBtn.textContent = 'Use';
+    useBtn.addEventListener('click', ()=> {
+      // select this template in dropdown
+      renderTemplateOptions();
+      chapterPatternSelect.value = 'custom_' + c.id;
+      chapterPatternSelect.dispatchEvent(new Event('change'));
+      setStatus(`Selected custom template "${c.name}"`, 'success');
+    });
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'Delete';
+    delBtn.className = 'danger';
+    delBtn.addEventListener('click', ()=> {
+      if(!confirm(`Delete custom template "${c.name}"?`)) return;
+      const arr = loadCustomTemplates().filter(x => x.id !== c.id);
+      saveCustomTemplates(arr);
+      renderTemplateOptions();
+      renderCustomList();
+      setStatus(`Deleted custom template "${c.name}"`, 'success');
+    });
+    const testBtn = document.createElement('button');
+    testBtn.textContent = 'Preview';
+    testBtn.addEventListener('click', ()=> {
+      // run on loaded file (if present) or alert
+      if(!fileContent){ setStatus('Load a .txt file first to preview.', 'error'); return; }
+      try{
+        const rx = new RegExp(c.pattern, c.flags || '');
+        const lines = fileContent.split(/\r?\n/);
+        const matched = [];
+        for(let i=0;i<Math.min(lines.length,500); i++){
+          if(rx.test(lines[i])) matched.push(lines[i].trim());
+          if(matched.length>=8) break;
+        }
+        matchPreview.style.display = 'block';
+        matchPreview.textContent = matched.length ? `Matches: ${matched.slice(0,6).join(' | ')}` : 'No matches in first 500 lines.';
+      }catch(err){
+        setStatus('Invalid regex saved (unexpected).', 'error');
+      }
+    });
+
+    right.appendChild(useBtn);
+    right.appendChild(testBtn);
+    right.appendChild(delBtn);
+
+    div.appendChild(left);
+    div.appendChild(right);
+    customListContainer.appendChild(div);
+  }
+}
+
+// Utility to create RegExp from template entry
+function templateToRegExp(entry){
+  try{
+    return new RegExp(entry.pattern, entry.flags || '');
+  }catch(e){
+    return null;
+  }
+}
+
+// Detect pattern heuristic: returns entry object with rx if >1 occurrences
+function detectPatternInLines(lines){
+  const entries = getAllTemplateEntries().filter(e => e.key !== 'auto');
+  for(const e of entries){
+    const rx = templateToRegExp(e);
+    if(!rx) continue;
+    let count = 0;
+    for(let i=0;i<Math.min(lines.length,400); i++){
+      if(rx.test(lines[i])){ count++; if(count>1) return { entry: e, rx }; }
     }
   }
   return null;
 }
 
-// show match preview for selected template (first few matches)
-function showMatchPreviewForSelection(text){
+// Show match preview for selection or auto
+function showMatchPreview(text){
   if(!text){ matchPreview.style.display = 'none'; return; }
   const lines = text.split(/\r?\n/);
-  const selected = chapterPatternSelect.value;
-  if(selected === 'auto'){
-    const d = detectPattern(lines);
-    if(d){
+  const sel = chapterPatternSelect.value;
+  if(sel === 'auto'){
+    const det = detectPatternInLines(lines);
+    if(det){
+      const matched = [];
+      for(let i=0;i<Math.min(lines.length,500); i++){
+        if(det.rx.test(lines[i])) matched.push(lines[i].trim());
+        if(matched.length>=6) break;
+      }
       matchPreview.style.display = 'block';
-      matchPreview.textContent = `Auto-detected template: ${d.key}. Example matches: ${getExampleMatches(d.rx, lines).join(' | ')}`;
+      matchPreview.textContent = `Auto-detected (${det.entry.name}) — matches: ${matched.join(' | ')}`;
     } else {
       matchPreview.style.display = 'block';
       matchPreview.textContent = 'Auto-detect found no repeated heading pattern in first 400 lines.';
     }
   } else {
-    const rx = CHAPTER_TEMPLATES[selected];
-    if(!rx){ matchPreview.style.display = 'none'; return; }
-    const matches = getExampleMatches(rx, lines);
+    // find entry by key
+    const all = getAllTemplateEntries();
+    const entry = all.find(x => x.key === sel);
+    if(!entry){ matchPreview.style.display = 'none'; return; }
+    const rx = templateToRegExp(entry);
+    if(!rx){
+      matchPreview.style.display = 'block';
+      matchPreview.textContent = 'This template has an invalid regex.';
+      return;
+    }
+    const matched = [];
+    for(let i=0;i<Math.min(lines.length,500); i++){
+      if(rx.test(lines[i])) matched.push(lines[i].trim());
+      if(matched.length>=6) break;
+    }
     matchPreview.style.display = 'block';
-    matchPreview.textContent = matches.length ? `Matches: ${matches.join(' | ')}` : 'No matches found for this template in the first 500 lines.';
+    matchPreview.textContent = matched.length ? `Matches: ${matched.join(' | ')}` : 'No matches in first 500 lines.';
   }
-}
-function getExampleMatches(rx, lines){
-  const arr = [];
-  for(let i=0;i<Math.min(lines.length, 500); i++){
-    if(rx.test(lines[i])) arr.push(lines[i].trim());
-    if(arr.length>=5) break;
-  }
-  return arr;
 }
 
-// splitting logic
+// Split chapters using selected or autodetected template
 function splitChapters(text){
   const lines = String(text).split(/\r?\n/);
-  const selected = chapterPatternSelect.value;
-  const headingInfo = (selected === 'auto') ? detectPattern(lines) : { key: selected, rx: CHAPTER_TEMPLATES[selected] || null };
-  const rx = headingInfo ? headingInfo.rx : null;
-
-  // preview update
-  if(headingInfo && headingInfo.rx){
-    const examples = getExampleMatches(headingInfo.rx, lines);
-    if(examples.length){
-      matchPreview.style.display = 'block';
-      matchPreview.textContent = `Using ${headingInfo.key}: ${examples.slice(0,3).join(' | ')}`;
-    } else {
-      matchPreview.style.display = 'block';
-      matchPreview.textContent = `Using ${headingInfo.key}: no early matches found.`;
-    }
+  const sel = chapterPatternSelect.value;
+  let rx = null;
+  if(sel === 'auto'){
+    const det = detectPatternInLines(lines);
+    rx = det ? det.rx : null;
   } else {
-    matchPreview.style.display = 'none';
+    const all = getAllTemplateEntries();
+    const entry = all.find(x => x.key === sel);
+    if(entry) rx = templateToRegExp(entry);
   }
+
+  // update preview
+  showMatchPreview(text);
 
   const chapters = [];
   let current = null;
-  const pushCurrent = () => { if(current) chapters.push(current); };
+  const push = ()=> { if(current) chapters.push(current); };
 
   if(!rx){
-    // no heading pattern: entire text as single entry
     chapters.push({ title: 'synopsis', content: text.trim() });
     return chapters;
   }
 
   let preface = [];
   for(const raw of lines){
-    const line = String(raw || '');
+    const line = String(raw||'');
     const m = line.match(rx);
     if(m){
-      pushCurrent();
+      push();
       current = { title: line.trim(), content: '' };
     } else {
       if(!current) preface.push(line);
       else current.content += line + '\n';
     }
   }
-  pushCurrent();
+  push();
   chapters.unshift({ title: 'synopsis', content: preface.join('\n').trim() });
   return chapters;
 }
 
-// build XHTML for EPUB chapter
+// EPUB helpers (XHTML building)
 function buildXhtml(title, bodyText){
-  const paras = String(bodyText || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const paras = String(bodyText||'').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
   const body = paras.map(p => `<p>${escapeHtml(p)}</p>`).join('\n');
-  return `<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh" lang="zh">\n<head>\n  <meta charset="utf-8" />\n  <title>${escapeHtml(title || '')}</title>\n</head>\n<body>\n  <h2>${escapeHtml(title || '')}</h2>\n  ${body}\n</body>\n</html>`;
+  return `<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh" lang="zh">\n<head>\n  <meta charset="utf-8" />\n  <title>${escapeHtml(title||'')}</title>\n</head>\n<body>\n  <h2>${escapeHtml(title||'')}</h2>\n  ${body}\n</body>\n</html>`;
 }
 
-// ZIP creation with indexed filenames
+// ZIP creation (indexed filenames)
 async function createZipDownload(chapters){
   showProgress();
   updateProgress(5, 'Preparing ZIP…');
   const zip = new JSZip();
-  const base = safeFilename((fileName || 'novel').replace(/\.txt$/i, ''));
+  const base = safeFilename((fileName || 'novel').replace(/\.txt$/i,''));
   const total = chapters.length;
   for(let i=0;i<total;i++){
     const ch = chapters[i];
-    const namePart = (i === 0) ? 'synopsis' : (ch.title || `chapter${i}`);
+    const namePart = (i===0) ? 'synopsis' : (ch.title || `chapter${i}`);
     const index = String(i).padStart(3, '0');
     const fname = `${index}_${safeFilename(namePart)}.txt`;
     zip.file(fname, ch.content || '');
     updateProgress(10 + (i/total)*80, `Adding ${fname}`);
-    // yield for UI responsiveness
     await new Promise(r => setTimeout(r, 0));
   }
   updateProgress(95, 'Generating ZIP…');
@@ -325,29 +472,22 @@ async function createZipDownload(chapters){
   setStatus(`Downloaded ${outName}`, 'success');
 }
 
-// EPUB creation with indexed filenames
+// EPUB creation (indexed filenames)
 async function createEpubDownload(chapters){
   showProgress();
   updateProgress(5, 'Preparing EPUB…');
   const zip = new JSZip();
-  const base = safeFilename((fileName || 'novel').replace(/\.txt$/i, ''));
+  const base = safeFilename((fileName || 'novel').replace(/\.txt$/i,''));
   const bookId = uuidv4();
-  const titleMeta = metaTitle.value.trim() || base;
-  const authorMeta = metaAuthor.value.trim() || 'Unknown';
+  const titleMeta = (document.getElementById('metaTitle').value || base).trim();
+  const authorMeta = (document.getElementById('metaAuthor').value || 'Unknown').trim();
   const lang = 'zh';
 
-  // mimetype first and stored (no compression)
+  // mimetype first (stored)
   zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
 
-  // META-INF/container.xml
-  zip.file('META-INF/container.xml',
-    `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n` +
-    `  <rootfiles>\n` +
-    `    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>\n` +
-    `  </rootfiles>\n` +
-    `</container>`
-  );
+  // container.xml
+  zip.file('META-INF/container.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n  <rootfiles>\n    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>\n  </rootfiles>\n</container>`);
 
   const oebps = zip.folder('OEBPS');
 
@@ -361,71 +501,44 @@ async function createEpubDownload(chapters){
     coverHref = coverName;
   }
 
-  // create XHTML files with indexed filenames
   const xhtmlFiles = [];
   for(let i=0;i<chapters.length;i++){
     const ch = chapters[i];
-    const namePart = (i === 0) ? 'synopsis' : (ch.title || `chapter${i}`);
+    const namePart = (i===0) ? 'synopsis' : (ch.title || `chapter${i}`);
     const index = String(i).padStart(3, '0');
     const fname = `${index}_${safeFilename(namePart)}.xhtml`;
     const xhtml = buildXhtml(ch.title, ch.content);
     oebps.file(fname, xhtml);
     xhtmlFiles.push({ id: `chap${i}`, href: fname, title: ch.title || `Chapter ${i}` });
-    updateProgress(10 + (i / chapters.length) * 70, `Adding ${fname}`);
+    updateProgress(10 + (i/chapters.length)*70, `Adding ${fname}`);
     await new Promise(r => setTimeout(r, 0));
   }
 
-  // optional cover.xhtml (kept as cover.xhtml so readers can detect it)
   if(coverHref){
     const coverXhtml = `<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${lang}" lang="${lang}">\n<head><meta charset="utf-8"/><title>Cover</title></head>\n<body style="margin:0;padding:0;text-align:center;">\n  <img src="${coverHref}" alt="Cover" style="max-width:100%;height:auto;"/>\n</body>\n</html>`;
     oebps.file('cover.xhtml', coverXhtml);
   }
 
   // toc.ncx
-  const navMapEntries = xhtmlFiles.map((f, idx) =>
-    `<navPoint id="navPoint-${idx+1}" playOrder="${idx+1}">\n  <navLabel><text>${escapeHtml(f.title)}</text></navLabel>\n  <content src="${f.href}"/>\n</navPoint>`
-  ).join('\n');
-  oebps.file('toc.ncx',
-    `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">\n` +
-    `<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">\n` +
-    `  <head>\n    <meta name="dtb:uid" content="${bookId}"/>\n    <meta name="dtb:depth" content="1"/>\n    <meta name="dtb:totalPageCount" content="0"/>\n    <meta name="dtb:maxPageNumber" content="0"/>\n` +
-    `  </head>\n` +
-    `  <docTitle><text>${escapeHtml(titleMeta)}</text></docTitle>\n` +
-    `  <navMap>\n${navMapEntries}\n  </navMap>\n` +
-    `</ncx>`
-  );
+  const navMap = xhtmlFiles.map((f, idx) => `<navPoint id="navPoint-${idx+1}" playOrder="${idx+1}">\n  <navLabel><text>${escapeHtml(f.title)}</text></navLabel>\n  <content src="${f.href}"/>\n</navPoint>`).join('\n');
+  oebps.file('toc.ncx', `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">\n<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">\n  <head>\n    <meta name="dtb:uid" content="${bookId}"/>\n    <meta name="dtb:depth" content="1"/>\n    <meta name="dtb:totalPageCount" content="0"/>\n    <meta name="dtb:maxPageNumber" content="0"/>\n  </head>\n  <docTitle><text>${escapeHtml(titleMeta)}</text></docTitle>\n  <navMap>\n${navMap}\n  </navMap>\n</ncx>`);
 
   // content.opf
   const manifestItems = [];
   const spineItems = [];
 
   manifestItems.push(`<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>`);
-
   if(coverHref){
     manifestItems.push(`<item id="cover-image" href="${coverHref}" media-type="${coverFile.type || 'image/jpeg'}"/>`);
     manifestItems.push(`<item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>`);
     spineItems.push(`<itemref idref="cover" linear="yes"/>`);
   }
-
   for(const f of xhtmlFiles){
     manifestItems.push(`<item id="${f.id}" href="${f.href}" media-type="application/xhtml+xml"/>`);
     spineItems.push(`<itemref idref="${f.id}" linear="yes"/>`);
   }
 
-  const opf = `<?xml version="1.0" encoding="utf-8"?>\n` +
-    `<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="BookId">\n` +
-    `  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">\n` +
-    `    <dc:title>${escapeHtml(titleMeta)}</dc:title>\n` +
-    `    <dc:creator>${escapeHtml(authorMeta)}</dc:creator>\n` +
-    `    <dc:language>${lang}</dc:language>\n` +
-    `    <dc:identifier id="BookId">urn:uuid:${bookId}</dc:identifier>\n` +
-    (coverHref ? `    <meta name="cover" content="cover-image"/>\n` : '') +
-    `  </metadata>\n` +
-    `  <manifest>\n    ${manifestItems.join('\n    ')}\n  </manifest>\n` +
-    `  <spine toc="ncx">\n    ${spineItems.join('\n    ')}\n  </spine>\n` +
-    `</package>`;
-
+  const opf = `<?xml version="1.0" encoding="utf-8"?>\n<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="BookId">\n  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">\n    <dc:title>${escapeHtml(titleMeta)}</dc:title>\n    <dc:creator>${escapeHtml(authorMeta)}</dc:creator>\n    <dc:language>${lang}</dc:language>\n    <dc:identifier id="BookId">urn:uuid:${bookId}</dc:identifier>\n    ${coverHref ? '<meta name="cover" content="cover-image"/>' : ''}\n  </metadata>\n  <manifest>\n    ${manifestItems.join('\n    ')}\n  </manifest>\n  <spine toc="ncx">\n    ${spineItems.join('\n    ')}\n  </spine>\n</package>`;
   oebps.file('content.opf', opf);
 
   updateProgress(95, 'Packaging EPUB…');
@@ -437,77 +550,124 @@ async function createEpubDownload(chapters){
   setStatus(`Downloaded ${outName}`, 'success');
 }
 
-// Event handlers
+// Event wiring
+function initializeUI(){
+  renderTemplateOptions();
+  renderCustomList();
+}
+
 fileInput.addEventListener('change', async (e) => {
   const f = e.target.files && e.target.files[0];
   if(!f){ setStatus('No file selected', 'error'); return; }
-  if(!(f.type === 'text/plain' || /\.txt$/i.test(f.name))){
-    setStatus('Please choose a .txt file.', 'error');
-    return;
-  }
+  if(!(f.type === 'text/plain' || /\.txt$/i.test(f.name))){ setStatus('Please choose a .txt file.', 'error'); return; }
   try{
-    showProgress();
-    updateProgress(5, 'Reading file…');
+    showProgress(); updateProgress(5, 'Reading file…');
     fileContent = await readFileAsText(f);
     fileName = f.name || 'novel.txt';
     fileNameInfo.textContent = `Loaded: ${fileName}`;
     setStatus(`Loaded: ${fileName}`, 'success');
-    processZipBtn.disabled = false;
-    processEpubBtn.disabled = false;
-    // show match preview
-    showMatchPreviewForSelection(fileContent);
+    processZipBtn.disabled = false; processEpubBtn.disabled = false;
+    showMatchPreview(fileContent);
     updateProgress(100, 'Ready');
     setTimeout(hideProgress, 300);
   }catch(err){
-    console.error(err);
-    hideProgress();
-    setStatus('Failed to read file.', 'error');
+    console.error(err); hideProgress(); setStatus('Failed to read file.', 'error');
   }
 });
 
-coverInput.addEventListener('change', (e) => {
+coverInput.addEventListener('change', e => {
   coverFile = e.target.files && e.target.files[0] ? e.target.files[0] : null;
   if(coverFile){
-    if(!String(coverFile.type || '').startsWith('image/')){
-      setStatus('Cover must be an image file.', 'error');
-      coverFile = null;
-      coverNameInfo.textContent = '';
-      return;
-    }
+    if(!String(coverFile.type || '').startsWith('image/')){ setStatus('Cover must be an image file.', 'error'); coverFile = null; coverNameInfo.textContent = ''; return; }
     coverNameInfo.textContent = `Cover: ${coverFile.name}`;
     setStatus(`Cover loaded: ${coverFile.name}`, 'success');
-  } else {
-    coverNameInfo.textContent = '';
-  }
+  } else { coverNameInfo.textContent = ''; }
 });
 
-chapterPatternSelect.addEventListener('change', () => {
-  if(fileContent) showMatchPreviewForSelection(fileContent);
-});
+chapterPatternSelect.addEventListener('change', ()=> { if(fileContent) showMatchPreview(fileContent); });
 
 processZipBtn.addEventListener('click', async () => {
   if(!fileContent){ setStatus('Select a .txt file first.', 'error'); return; }
-  setStatus('Processing ZIP…');
   try{
+    setStatus('Processing ZIP…');
     const chapters = splitChapters(fileContent);
     await createZipDownload(chapters);
   }catch(err){
-    console.error(err);
-    setStatus('Error creating ZIP.', 'error');
+    console.error(err); setStatus('Error creating ZIP.', 'error');
   }
 });
 
 processEpubBtn.addEventListener('click', async () => {
   if(!fileContent){ setStatus('Select a .txt file first.', 'error'); return; }
-  setStatus('Processing EPUB…');
   try{
+    setStatus('Processing EPUB…');
     const chapters = splitChapters(fileContent);
     await createEpubDownload(chapters);
   }catch(err){
-    console.error(err);
-    setStatus('Error creating EPUB.', 'error');
+    console.error(err); setStatus('Error creating EPUB.', 'error');
   }
 });
+
+// Add custom template
+addCustomBtn.addEventListener('click', ()=> {
+  const name = (customName.value || '').trim();
+  const pattern = (customPattern.value || '').trim();
+  const flags = (customFlags.value || '').trim();
+  customMsg.textContent = '';
+  if(!name || !pattern){ customMsg.textContent = 'Please provide both name and pattern.'; return; }
+  try{
+    // validate pattern
+    new RegExp(pattern, flags);
+  }catch(err){
+    customMsg.textContent = 'Invalid regex: ' + (err.message || '');
+    return;
+  }
+  // save
+  const arr = loadCustomTemplates();
+  const id = uuidv4();
+  arr.push({ id, name, pattern, flags });
+  saveCustomTemplates(arr);
+  renderTemplateOptions();
+  renderCustomList();
+  customName.value = ''; customPattern.value = ''; customFlags.value = ''; customTest.value = '';
+  setStatus(`Saved custom template "${name}"`, 'success');
+  // select new template
+  chapterPatternSelect.value = 'custom_' + id;
+  showMatchPreview(fileContent);
+});
+
+// Test custom regex without saving
+testCustomBtn.addEventListener('click', ()=> {
+  const pattern = (customPattern.value || '').trim();
+  const flags = (customFlags.value || '').trim();
+  const testStr = (customTest.value || '').trim();
+  customMsg.textContent = '';
+  if(!pattern){ customMsg.textContent = 'Enter a pattern to test.'; return; }
+  try{
+    const rx = new RegExp(pattern, flags);
+    const source = testStr || fileContent || '';
+    if(!source){ customMsg.textContent = 'No input (load a file or provide test string).'; return; }
+    const lines = source.split(/\r?\n/);
+    const matched = [];
+    for(let i=0;i<Math.min(lines.length,500); i++){
+      if(rx.test(lines[i])) matched.push(lines[i].trim());
+      if(matched.length>=8) break;
+    }
+    matchPreview.style.display = 'block';
+    matchPreview.textContent = matched.length ? `Matches: ${matched.join(' | ')}` : 'No matches found.';
+  }catch(err){
+    customMsg.textContent = 'Invalid regex: ' + (err.message || '');
+  }
+});
+
+// Reset custom templates
+resetCustomBtn.addEventListener('click', ()=> {
+  if(!confirm('Remove all custom templates? This cannot be undone.')) return;
+  resetCustomTemplates();
+});
+
+// initial render
+initializeUI();
 </script>
 </body>
 </html>
